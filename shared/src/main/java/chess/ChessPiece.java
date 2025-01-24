@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Represents a single chess piece
@@ -69,6 +70,6 @@ public class ChessPiece {
 
     @Override
     public String toString() {
-        return "ChessPiece{" + "pieceColor=" + pieceColor + ", type=" + type + '}';
+        return "ChessPiece{" + "pieceColor=" + pieceColor + ", type=" + type + "}";
     }
 }
