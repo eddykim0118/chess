@@ -35,7 +35,7 @@ public class ChessPosition {
     public boolean equals(object ob) {
         if (this == ob) return true;
         if (ob == null || getClass() != ob.getClass()) return false;
-        ChessPosition that = (ChessPosition) ob;
+        ChessPosition chessPosition = (ChessPosition) ob;
         return row == that.row && col == that.col;
     }
 
