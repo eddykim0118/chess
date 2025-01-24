@@ -34,11 +34,11 @@ public class ChessPosition {
     }
 
     @Override
-    public boolean equals(object ob) {
+    public boolean equals(Object ob) {
         if (this == ob) return true;
         if (ob == null || getClass() != ob.getClass()) return false;
         ChessPosition chessPosition = (ChessPosition) ob;
-        return row == that.row && col == that.col;
+        return row == chessPosition.row && col == chessPosition.col;
     }
 
     @Override

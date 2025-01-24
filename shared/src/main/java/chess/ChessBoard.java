@@ -39,7 +39,7 @@ public class ChessBoard {
         if (isValidPosition(position)) {
             return board[position.getRow() - 1][position.getColumn() - 1];
         }
-        return null
+        return null;
     }
 
     /**
