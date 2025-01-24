@@ -50,6 +50,19 @@ public class ChessBoard {
         throw new RuntimeException("Not implemented");
     }
 
+    /**
+     * Checks if a position is within the valid bounds of the chess board
+     *
+     * @param position The position to check
+     * @return true if the position is valid, false otherwise
+     */
+    private boolean isValidPosition(ChessPosition position) {
+        return position != null &&
+               position.getRow() >= 1 && position.getRow() <= 8 &&
+               position.getColumn() >= 1 && position.getColumn() <= 8;
+    }
+
+    
     @Override
     public boolean equals(Object ob) {
         if (this == ob) return true;
