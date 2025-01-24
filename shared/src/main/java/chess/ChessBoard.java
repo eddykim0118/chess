@@ -50,8 +50,12 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-            // Clear the board first
-        board = new ChessPiece[8][8];
+        // Clear the board first
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                board[i][j] = null;
+            }
+        }
 
         // Setup White Pieces (Bottom of board - row 1)
         addPiece(new ChessPosition(1, 1), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.ROOK));
