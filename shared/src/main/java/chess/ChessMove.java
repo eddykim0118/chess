@@ -41,4 +41,24 @@ public class ChessMove {
     public ChessPiece.PieceType getPromotionPiece() {
         return promotionPiece;
     }
+
+    @Override
+    public boolean equals(Object ob) {
+        if (this == ob) return true;
+        if (ob == null || getClass() != ob.getClass()) return false;
+        ChessMove chessMove = (ChessMove) ob;
+        return Objects.equals(startPosition, chessMove.startPosition) &&
+               Objects.equals(endPosition, chessMove.endPosition) &&
+               promotionPiece == chessMove.promotionPiece;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startPosition, endPosition, promotionPiece);
+    }
+    
+    @Override
+    public String toString() {
+        return "ChessMove{" + "startPosition=" + startPosition + ", endPosition=" + endPosition + ", promotionPiece=" + promotionPiece + '}';"
+    }
 }
