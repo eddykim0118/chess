@@ -16,6 +16,7 @@ public class ChessGame {
 
     public ChessGame() {
         this.board = new ChessBoard();
+        this.board.resetBoard();
         this.teamTurn = TeamColor.WHITE;
     }
 
@@ -91,12 +92,17 @@ public class ChessGame {
         }
 
         ChessPosition end = move.getEndPosition();
-        board.addPiece(end, piece);
+        
+        // Make the move
         board.removePiece(start);
-
+        
         // Handle pawn promotion
-        if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (end.getRow() == 8)) {
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN && 
+            (end.getRow() == 8 || end.getRow() == 1) && 
+            move.getPromotionPiece() != null) {
             board.addPiece(end, new ChessPiece(piece.getTeamColor(), move.getPromotionPiece()));
+        } else {
+            board.addPiece(end, piece);
         }
 
         // Check if the move puts the king in check
