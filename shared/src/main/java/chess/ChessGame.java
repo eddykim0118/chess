@@ -62,7 +62,7 @@ public class ChessGame {
         for (ChessMove move : possibleMoves) {
             ChessBoard tempBoard = cloneBoard();
             tempBoard.addPiece(move.getEndPosition(), piece);
-            tempBoard.addPiece(startPosition);
+            tempBoard.removePiece(startPosition);
 
             if (!isInCheck(piece.getTeamColor(), tempBoard)) {
                 validMoves.add(move);
@@ -79,8 +79,8 @@ public class ChessGame {
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessPosition start = move.getStartPosition();
-        ChessPiece piece =board.getPiece(start);
-        
+        ChessPiece piece = board.getPiece(start);
+
         if (piece == null || piece.getTeamColor() != teamTurn) {
             throw new InvalidMoveException("Invalid move: No Piece or wrong team's turn");
         }
@@ -92,13 +92,19 @@ public class ChessGame {
 
         ChessPosition end = move.getEndPosition();
         board.addPiece(end, piece);
-        board.addPiece(start, null);
+        board.removePiece(start);
 
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (end.getRow() == 8)) {
             board.addPiece(end, new ChessPiece(piece.getTeamColor(), move.getPromotionPiece()));
         }
 
+        if (isInCheck(piece.getTeamColor())) {
+            throw new InvalidMoveException("Invalid move: This move leaves the king in check.");
+        }
+
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+    }
+    r.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
     /**

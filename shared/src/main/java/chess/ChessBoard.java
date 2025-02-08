@@ -29,6 +29,11 @@ public class ChessBoard {
         }
     }
 
+    public void removePiece(ChessPosition position) {
+        addPiece(position, null);
+    }
+
+
     /**
      * Gets a chess piece on the chessboard
      *
