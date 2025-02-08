@@ -94,18 +94,24 @@ public class ChessGame {
         board.addPiece(end, piece);
         board.removePiece(start);
 
+        // Handle pawn promotion
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (end.getRow() == 8)) {
             board.addPiece(end, new ChessPiece(piece.getTeamColor(), move.getPromotionPiece()));
         }
 
+        // Check if the move puts the king in check
         if (isInCheck(piece.getTeamColor())) {
+            // Revert the move
+            board.addPiece(start, piece);
+            board.removePiece(end);
             throw new InvalidMoveException("Invalid move: This move leaves the king in check.");
         }
 
+        // Switch turns only if move is valid
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
-    r.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
-    }
+
+    
 
     /**
      * Determines if the given team is in check
@@ -138,7 +144,7 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
                 if (piece != null && piece.getTeamColor() == teamColor) {
-                    if (!validMoves(pos).isEmpty()) {
+                    if (!validMoves(pos) != null && !validMoves(pos).isEmpty()) {
                         return false;
                     }
                 }
@@ -165,7 +171,7 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
                 if (piece != null && piece.getTeamColor() == teamColor) {
-                    if (!validMoves(pos).isEmpty()) {
+                    if (!validMoves(pos) != null && !validMoves(pos).isEmpty()) {
                         return false;
                     }
                 }
@@ -233,10 +239,11 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
                 ChessPiece piece = board.getPiece(pos);
                 if (piece != null) {
                     newBoard.addPiece(pos, new ChessPiece(piece.getTeamColor(), piece.getPieceType()));
+                } else {
+                    newBoard.removePiece(pos);
                 }
             }
         }
         return newBoard;
     }
-
 }
