@@ -2,6 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.HashSet;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -59,9 +60,9 @@ public class ChessGame {
         Collection<ChessMove> validMoves = new HashSet<>();
 
         for (ChessMove move : possibleMoves) {
-            ChessBoard tempBoard = coneBoard();
-            tempBoard.addPice(move.getEndPosition(), piece);
-            tempBoard.addPiece(startPosition, null);
+            ChessBoard tempBoard = cloneBoard();
+            tempBoard.addPiece(move.getEndPosition(), piece);
+            tempBoard.addPiece(startPosition);
 
             if (!isInCheck(piece.getTeamColor(), tempBoard)) {
                 validMoves.add(move);
@@ -77,9 +78,9 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        ChessPiece piece =board.getPiece(start);
         ChessPosition start = move.getStartPosition();
-
+        ChessPiece piece =board.getPiece(start);
+        
         if (piece == null || piece.getTeamColor() != teamTurn) {
             throw new InvalidMoveException("Invalid move: No Piece or wrong team's turn");
         }
@@ -94,7 +95,7 @@ public class ChessGame {
         board.addPiece(start, null);
 
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (end.getRow() == 8)) {
-            board.addPiece(end, new ChessPiece(piece.getTeamColor(), move.getPromoptionPiece()));
+            board.addPiece(end, new ChessPiece(piece.getTeamColor(), move.getPromotionPiece()));
         }
 
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
@@ -107,7 +108,7 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        return isInCheck(teamColor, baord);
+        return isInCheck(teamColor, board);
     }
 
     private boolean isInCheck(TeamColor teamColor, ChessBoard board) {
@@ -231,4 +232,5 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
         }
         return newBoard;
     }
+
 }
