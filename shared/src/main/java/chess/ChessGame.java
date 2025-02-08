@@ -144,13 +144,13 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
                 if (piece != null && piece.getTeamColor() == teamColor) {
-                    if (!validMoves(pos) != null && !validMoves(pos).isEmpty()) {
+                    Collection<ChessMove> moves = validMoves(pos);
+                    if (moves != null && !moves.isEmpty()) {
                         return false;
                     }
                 }
             }
         }
-
         return true;
     }
 
@@ -171,7 +171,8 @@ public class ChessGame {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
                 if (piece != null && piece.getTeamColor() == teamColor) {
-                    if (!validMoves(pos) != null && !validMoves(pos).isEmpty()) {
+                    Collection<ChessMove> moves = validMoves(pos);
+                    if (moves != null && !moves.isEmpty()) {
                         return false;
                     }
                 }
