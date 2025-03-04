@@ -44,5 +44,10 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.36</version>
         </dependency>
+        <dependency>
+            <groupId>edu.byu.cs240</groupId>
+            <artifactId>shared</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 </project>
