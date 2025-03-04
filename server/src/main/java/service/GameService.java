@@ -48,7 +48,7 @@ public class GameService {
             throw new DataAccessException("Error: unauthorized");
         }
         
-        AuthData auth = authDAO.getAuth(authToken); // Verify the auth token is valid
+        AuthData auth = authDAO.getAuth(authToken);
         
         if (request.gameID() <= 0) {
             throw new DataAccessException("Error: bad request");
@@ -56,12 +56,22 @@ public class GameService {
         
         GameData game = gameDAO.getGame(request.gameID());
         
+        // Empty strings should be rejected, but null can mean observation
+        if (request.playerColor() != null && request.playerColor().isEmpty()) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
         if (request.playerColor() == null) {
             // Just observing the game, no need to update anything
             return;
         }
         
         String color = request.playerColor().toUpperCase();
+        // Add this validation for player color
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
         if (color.equals("WHITE")) {
             if (game.whiteUsername() != null) {
                 throw new DataAccessException("Error: already taken");
