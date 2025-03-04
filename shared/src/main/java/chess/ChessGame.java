@@ -145,17 +145,8 @@ public class ChessGame {
             return false;
         }
 
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMoves(pos);
-                    if (moves != null && !moves.isEmpty()) {
-                        return false;
-                    }
-                }
-            }
+        if (checkBoardForCondition(teamColor, board)) {
+            return false;
         }
         return true;
     }
@@ -172,17 +163,8 @@ public class ChessGame {
             return false;
         }
 
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(pos);
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMoves(pos);
-                    if (moves != null && !moves.isEmpty()) {
-                        return false;
-                    }
-                }
-            }
+        if (checkBoardForCondition(teamColor, board)) {
+            return false;
         }
         return true;
     }
@@ -252,5 +234,25 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
             }
         }
         return newBoard;
+    }
+
+    private boolean checkBoardForCondition(TeamColor teamColor, ChessBoard board) {
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                if (checkPositionForCondition(new ChessPosition(row, col), teamColor, board)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkPositionForCondition(ChessPosition position, TeamColor teamColor, ChessBoard board) {
+        ChessPiece piece = board.getPiece(position);
+        if (piece == null || piece.getTeamColor() != teamColor) {
+            return false;
+        }
+        
+        return evaluatePieceCondition(piece, position, board);
     }
 }
