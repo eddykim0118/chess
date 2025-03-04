@@ -5,6 +5,7 @@ import dataAccess.*;
 import model.*;
 import service.*;
 import service.requests.*;
+import service.results.*;
 import spark.*;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ public class Server {
     private final Gson gson = new Gson();
 
     public Server() {
+        // Initialize DAOs
         UserDAO userDAO = new MemoryUserDAO();
         GameDAO gameDAO = new MemoryGameDAO();
         AuthDAO authDAO = new MemoryAuthDAO();
@@ -32,7 +34,7 @@ public class Server {
 
         Spark.staticFiles.location("web");
 
-        // Register your endpoints and handle exceptions here.
+        // Register endpoints
         Spark.delete("/db", this::clearApplication);
         Spark.post("/user", this::register);
         Spark.post("/session", this::login);
@@ -41,13 +43,14 @@ public class Server {
         Spark.post("/game", this::createGame);
         Spark.put("/game", this::joinGame);
 
-        //This line initializes the server and can be removed once you have a functioning endpoint 
+        // Handle exceptions
         Spark.exception(DataAccessException.class, this::handleException);
-        Spark.init();
+
         Spark.awaitInitialization();
         return Spark.port();
     }
 
+    // Exception handler
     private void handleException(DataAccessException e, Request req, Response res) {
         res.status(determineStatusCode(e.getMessage()));
         res.body(gson.toJson(Map.of("message", e.getMessage())));
