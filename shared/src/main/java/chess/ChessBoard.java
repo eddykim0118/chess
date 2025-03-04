@@ -107,8 +107,8 @@ public class ChessBoard {
     
     @Override
     public boolean equals(Object ob) {
-        if (this == ob) return true;
-        if (ob == null || getClass() != ob.getClass()) return false;
+        if (this == ob) { return true; }
+        if (ob == null || getClass() != ob.getClass()) { return false; }
         ChessBoard chessBoard = (ChessBoard) ob;
         return Arrays.deepEquals(board, chessBoard.board);
     }
