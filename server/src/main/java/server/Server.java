@@ -27,25 +27,34 @@ public class Server {
     }
 
     public int run(int desiredPort) {
-        Spark.port(desiredPort);
+        try {
+            DatabaseManager.createDatabase();
+            DatabaseManager.createTables();
 
-        Spark.staticFiles.location("web");
+            Spark.port(desiredPort);
 
-        // Register endpoints
-        Spark.delete("/db", this::clearApplication);
-        Spark.post("/user", this::register);
-        Spark.post("/session", this::login);
-        Spark.delete("/session", this::logout);
-        Spark.get("/game", this::listGames);
-        Spark.post("/game", this::createGame);
-        Spark.put("/game", this::joinGame);
+            Spark.staticFiles.location("web");
 
-        // Handle exceptions
-        Spark.exception(DataAccessException.class, this::handleException);
+            // Register endpoints
+            Spark.delete("/db", this::clearApplication);
+            Spark.post("/user", this::register);
+            Spark.post("/session", this::login);
+            Spark.delete("/session", this::logout);
+            Spark.get("/game", this::listGames);
+            Spark.post("/game", this::createGame);
+            Spark.put("/game", this::joinGame);
 
-        Spark.awaitInitialization();
-        return Spark.port();
+            // Handle exceptions
+            Spark.exception(DataAccessException.class, this::handleException);
+
+            Spark.awaitInitialization();
+            return Spark.port();
+        } catch (DataAccessException e) {
+            System.err.println("Error initializing database: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize database", e);
+        }
     }
+
 
     // Exception handler
     private void handleException(DataAccessException e, Request req, Response res) {
