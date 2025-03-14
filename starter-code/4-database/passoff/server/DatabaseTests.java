@@ -91,9 +91,9 @@ public class DatabaseTests {
     private int getDatabaseRows() {
         AtomicInteger rows = new AtomicInteger();
         executeForAllTables((tableName, connection) -> {
-            try (var statement = connection.createStatement()) {
+            try (var stmt = connection.createstmt()) {
                 var sql = "SELECT count(*) FROM " + tableName;
-                try (var resultSet = statement.executeQuery(sql)) {
+                try (var resultSet = stmt.executeQuery(sql)) {
                     if (resultSet.next()) {
                         rows.addAndGet(resultSet.getInt(1));
                     }
@@ -106,7 +106,7 @@ public class DatabaseTests {
 
     private void checkTableForPassword(String table, Connection connection) throws SQLException {
         String sql = "SELECT * FROM " + table;
-        try (Statement statement = connection.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+        try (stmt stmt = connection.createstmt(); ResultSet rs = stmt.executeQuery(sql)) {
             ResultSetMetaData rsmd = rs.getMetaData();
             int columns = rsmd.getColumnCount();
             while (rs.next()) {
@@ -126,8 +126,8 @@ public class DatabaseTests {
                     WHERE table_schema = DATABASE();
                 """;
 
-        try (Connection conn = getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
-            try (var resultSet = preparedStatement.executeQuery()) {
+        try (Connection conn = getConnection(); Preparedstmt preparedstmt = conn.preparestmt(sql)) {
+            try (var resultSet = preparedstmt.executeQuery()) {
                 while (resultSet.next()) {
                     tableAction.execute(resultSet.getString(1), conn);
                 }
