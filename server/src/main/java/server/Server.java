@@ -2,13 +2,10 @@ package server;
 
 import com.google.gson.Gson;
 import dataaccess.*;
-import model.*;
 import service.*;
 import service.requests.*;
-import service.results.*;
 import spark.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class Server {
