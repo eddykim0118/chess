@@ -112,7 +112,6 @@ public class ChessGame {
             throw new InvalidMoveException("Invalid move: This move leaves the king in check.");
         }
 
-        // Switch turns only if move is valid
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
@@ -246,29 +245,45 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
         }
         
         // Check if any piece can make a valid move
+        return canAnyPieceMakeValidMove(teamColor, boardToCheck);
+    }
+
+    // New helper method to reduce nesting
+    private boolean canAnyPieceMakeValidMove(TeamColor teamColor, ChessBoard boardToCheck) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = boardToCheck.getPiece(position);
                 
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    // Get potential moves for this piece
-                    Collection<ChessMove> pieceMoves = piece.pieceMoves(boardToCheck, position);
-                    
-                    for (ChessMove move : pieceMoves) {
-                        // Try the move on a temporary board
-                        ChessBoard tempBoard = cloneBoard(boardToCheck);
-                        tempBoard.addPiece(move.getEndPosition(), piece);
-                        tempBoard.removePiece(position);
-                        
-                        // Check if king is still in check after this move
-                        if (!isInCheck(teamColor, tempBoard)) {
-                            return true; // Found a valid move
-                        }
-                    }
+                if (piece == null || piece.getTeamColor() != teamColor) {
+                    continue;
+                }
+                
+                // Get potential moves for this piece
+                if (canPieceMakeValidMove(piece, position, teamColor, boardToCheck)) {
+                    return true;
                 }
             }
         }
-        return false; // No valid moves found
+        return false;
+    }
+
+    // Additional helper method to further reduce nesting
+    private boolean canPieceMakeValidMove(ChessPiece piece, ChessPosition position, 
+                                       TeamColor teamColor, ChessBoard boardToCheck) {
+        Collection<ChessMove> pieceMoves = piece.pieceMoves(boardToCheck, position);
+        
+        for (ChessMove move : pieceMoves) {
+            // Try the move on a temporary board
+            ChessBoard tempBoard = cloneBoard(boardToCheck);
+            tempBoard.addPiece(move.getEndPosition(), piece);
+            tempBoard.removePiece(position);
+            
+            // Check if king is still in check after this move
+            if (!isInCheck(teamColor, tempBoard)) {
+                return true; // Found a valid move
+            }
+        }
+        return false;
     }
 }

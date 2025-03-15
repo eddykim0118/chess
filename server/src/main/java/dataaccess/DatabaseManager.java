@@ -90,7 +90,13 @@ public class DatabaseManager {
         }
     }
 
-    // Reduce nesting depth in getDatabaseRowCount
+    /**
+     * Counts the total number of rows across all database tables.
+     * This method is intentionally kept for debugging and testing purposes.
+     * 
+     * @return The total number of rows in all tables
+     */
+    @SuppressWarnings("unused") // Suppress the warning since this is kept for debugging
     public static int getDatabaseRowCount() {
         int count = 0;
         try (Connection conn = getConnection()) {
