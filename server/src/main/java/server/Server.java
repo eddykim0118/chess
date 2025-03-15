@@ -49,7 +49,7 @@ public class Server {
 
             Spark.awaitInitialization();
             return Spark.port();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             System.err.println("Error initializing database: " + e.getMessage());
             throw new RuntimeException("Failed to initialize database", e);
         }
