@@ -89,4 +89,29 @@ public class DatabaseManager {
             throw new DataAccessException("Unable to connect to database: " + e.getMessage());
         }
     }
+
+    public static int getDatabaseRowCount() {
+        int count = 0;
+        try (Connection conn = getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                // Get table names
+                ResultSet tables = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"});
+                while (tables.next()) {
+                    String tableName = tables.getString("TABLE_NAME");
+                    if (tableName.equals("users") || tableName.equals("auth") || tableName.equals("games")) {
+                        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tableName);
+                        if (rs.next()) {
+                            int tableCount = rs.getInt(1);
+                            System.out.println(tableName + " has " + tableCount + " rows");
+                            count += tableCount;
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting rows: " + e.getMessage());
+        }
+        System.out.println("Total row count: " + count);
+        return count;
+    }
 }

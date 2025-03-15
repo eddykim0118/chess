@@ -16,9 +16,9 @@ public class Server {
 
     public Server() {
         // Initialize DAOs
-        UserDAO userDAO = new MemoryUserDAO();
-        GameDAO gameDAO = new MemoryGameDAO();
-        AuthDAO authDAO = new MemoryAuthDAO();
+        UserDAO userDAO = new MySQLUserDAO();
+        GameDAO gameDAO = new MySQLGameDAO();
+        AuthDAO authDAO = new MySQLAuthDAO();
         
         // Initialize Services
         userService = new UserService(userDAO, authDAO);
@@ -28,8 +28,8 @@ public class Server {
 
     public int run(int desiredPort) {
         try {
-            DatabaseManager.createDatabase();
-            DatabaseManager.createTables();
+            // DatabaseManager.createDatabase();
+            // DatabaseManager.createTables();
 
             Spark.port(desiredPort);
 
@@ -49,7 +49,7 @@ public class Server {
 
             Spark.awaitInitialization();
             return Spark.port();
-        } catch (DataAccessException e) {
+        } catch (Exception e) {
             System.err.println("Error initializing database: " + e.getMessage());
             throw new RuntimeException("Failed to initialize database", e);
         }
