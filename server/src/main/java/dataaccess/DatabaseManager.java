@@ -90,30 +90,39 @@ public class DatabaseManager {
         }
     }
 
+    // Reduce nesting depth in getDatabaseRowCount
     public static int getDatabaseRowCount() {
         int count = 0;
         try (Connection conn = getConnection()) {
             try (Statement stmt = conn.createStatement()) {
-                // Get table names
-                ResultSet tables = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"});
-                while (tables.next()) {
-                    String tableName = tables.getString("TABLE_NAME");
-                    if (tableName.equals("users") || tableName.equals("auth") || tableName.equals("games")) {
-                        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tableName);
-                        if (rs.next()) {
-                            int tableCount = rs.getInt(1);
-                            System.out.println(tableName + " has " + tableCount + " rows");
-                            count += tableCount;
-                        }
-                    }
-                }
+                count = countRowsInAllTables(stmt);
             }
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             System.err.println("Error counting rows: " + e.getMessage());
-        } catch (DataAccessException e) {
-            System.err.println("Error accessing database: " + e.getMessage());
         }
         System.out.println("Total row count: " + count);
         return count;
+    }
+
+    private static int countRowsInAllTables(Statement stmt) throws SQLException {
+        int count = 0;
+        String[] tablesToCheck = {"users", "auth", "games"};
+        
+        for (String tableName : tablesToCheck) {
+            count += getTableRowCount(stmt, tableName);
+        }
+        
+        return count;
+    }
+
+    private static int getTableRowCount(Statement stmt, String tableName) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tableName)) {
+            if (rs.next()) {
+                int tableCount = rs.getInt(1);
+                System.out.println(tableName + " has " + tableCount + " rows");
+                return tableCount;
+            }
+        }
+        return 0;
     }
 }
