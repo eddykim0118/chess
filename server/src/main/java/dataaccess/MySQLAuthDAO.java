@@ -3,6 +3,8 @@ package dataaccess;
 import model.AuthData;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 public class MySQLAuthDAO implements AuthDAO {
     
@@ -18,15 +20,29 @@ public class MySQLAuthDAO implements AuthDAO {
     
     @Override
     public String createAuth(String username) throws DataAccessException {
-        String authToken = UUID.randomUUID().toString();
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement("INSERT INTO auth (authToken, username) VALUES (?, ?)")) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // Make sure autoCommit is enabled (or explicitly commit)
+            boolean originalAutoCommit = conn.getAutoCommit();
+            if (!originalAutoCommit) {
+                conn.setAutoCommit(true);
+            }
+            
+            String authToken = UUID.randomUUID().toString();
+            String sql = "INSERT INTO auth (authToken, username) VALUES (?, ?)";
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, authToken);
                 stmt.setString(2, username);
-                stmt.executeUpdate();
-            return authToken;
+                
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected == 0) {
+                    throw new DataAccessException("Failed to create auth token");
+                }
+                
+                return authToken;
+            }
         } catch (SQLException e) {
-            throw new DataAccessException("Error creating auth token" + e.getMessage());
+            throw new DataAccessException("Error creating auth token: " + e.getMessage());
         }
     }
     

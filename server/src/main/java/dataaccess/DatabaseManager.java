@@ -49,43 +49,30 @@ public class DatabaseManager {
      * Creates all required tables if they do not already exist
      */
     public static void createTables() throws DataAccessException {
-        createDatabase();
         try (Connection conn = getConnection()) {
-            String createUsersTable = """
-                CREATE TABLE IF NOT EXISTS users (
-                    username VARCHAR(255) NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    PRIMARY KEY (username)
-                )
-            """;
-
-            String createAuthTable = """
-                CREATE TABLE IF NOT EXISTS auth (
-                    authToken VARCHAR(255) NOT NULL,
-                    username VARCHAR(255) NOT NULL,
-                    PRIMARY KEY (authToken),
-                    FOREIGN KEY (username) REFERENCES users(username)
-                )
-            """;
-
-            String createGamesTable = """
-                CREATE TABLE IF NOT EXISTS games (
-                    gameID INT NOT NULL AUTO_INCREMENT,
-                    whiteUsername VARCHAR(255),
-                    blackUsername VARCHAR(255),
-                    gameName VARCHAR(255) NOT NULL,
-                    game TEXT NOT NULL,
-                    PRIMARY KEY (gameID),
-                    FOREIGN KEY (whiteUsername) REFERENCES users(username),
-                    FOREIGN KEY (blackUsername) REFERENCES users(username)
-                )
-            """;
-
+            // Create users table
             try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate(createUsersTable);
-                stmt.executeUpdate(createAuthTable);
-                stmt.executeUpdate(createGamesTable);
+                String createUsers = "CREATE TABLE IF NOT EXISTS users (" +
+                        "username VARCHAR(255) NOT NULL PRIMARY KEY, " +
+                        "password VARCHAR(255) NOT NULL, " +
+                        "email VARCHAR(255) NOT NULL)";
+                stmt.executeUpdate(createUsers);
+                
+                String createAuth = "CREATE TABLE IF NOT EXISTS auth (" +
+                        "authToken VARCHAR(255) NOT NULL PRIMARY KEY, " +
+                        "username VARCHAR(255) NOT NULL, " +
+                        "FOREIGN KEY (username) REFERENCES users(username))";
+                stmt.executeUpdate(createAuth);
+                
+                String createGames = "CREATE TABLE IF NOT EXISTS games (" +
+                        "gameID INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                        "whiteUsername VARCHAR(255), " +
+                        "blackUsername VARCHAR(255), " +
+                        "gameName VARCHAR(255) NOT NULL, " +
+                        "game TEXT NOT NULL, " +
+                        "FOREIGN KEY (whiteUsername) REFERENCES users(username), " +
+                        "FOREIGN KEY (blackUsername) REFERENCES users(username))";
+                stmt.executeUpdate(createGames);
             }
         } catch (SQLException e) {
             throw new DataAccessException("Error creating tables: " + e.getMessage());
