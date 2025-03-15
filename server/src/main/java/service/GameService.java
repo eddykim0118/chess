@@ -1,11 +1,13 @@
 package service;
 
+import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 import service.requests.CreateGameRequest;
 import service.requests.JoinGameRequest;
 import service.results.CreateGameResult;
+import service.results.JoinGameResult;
 import service.results.ListGamesResult;
 import java.util.Collection;
 
@@ -43,47 +45,48 @@ public class GameService {
         return new CreateGameResult(gameID);
     }
 
-    public void joinGame(String authToken, JoinGameRequest request) throws DataAccessException {
-        if (authToken == null) {
+    public JoinGameResult joinGame(String authToken, JoinGameRequest request) throws DataAccessException {
+        if (authToken == null || request == null || request.gameID() <= 0) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
+        // Add this validation for team color
+        String playerColor = request.playerColor();
+        if (playerColor != null) {
+            try {
+                ChessGame.TeamColor.valueOf(playerColor);
+            } catch (IllegalArgumentException e) {
+                throw new DataAccessException("Error: bad request");
+            }
+        } else if (playerColor == null || playerColor.isEmpty()) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
+        // Rest of your existing code...
+        // Check authorization
+        AuthData auth = authDAO.getAuth(authToken);
+        if (auth == null) {
             throw new DataAccessException("Error: unauthorized");
         }
         
-        AuthData auth = authDAO.getAuth(authToken);
-        
-        if (request.gameID() <= 0) {
-            throw new DataAccessException("Error: bad request");
-        }
-        
+        // Get the game
         GameData game = gameDAO.getGame(request.gameID());
-        
-        // Empty strings should be rejected, but null can mean observation
-        if (request.playerColor() != null && request.playerColor().isEmpty()) {
+        if (game == null) {
             throw new DataAccessException("Error: bad request");
         }
         
-        if (request.playerColor() == null) {
-            // Just observing the game, no need to update anything
-            return;
+        // Check if the color is already taken
+        if (playerColor.equals("WHITE") && game.whiteUsername() != null) {
+            throw new DataAccessException("Error: already taken");
+        } else if (playerColor.equals("BLACK") && game.blackUsername() != null) {
+            throw new DataAccessException("Error: already taken");
         }
         
-        String color = request.playerColor().toUpperCase();
-        // Add this validation for player color
-        if (!color.equals("WHITE") && !color.equals("BLACK")) {
-            throw new DataAccessException("Error: bad request");
-        }
+        // Update the game with the player
+        gameDAO.updateGame(request.gameID(), 
+                          playerColor.equals("WHITE") ? auth.username() : game.whiteUsername(),
+                          playerColor.equals("BLACK") ? auth.username() : game.blackUsername());
         
-        if (color.equals("WHITE")) {
-            if (game.whiteUsername() != null) {
-                throw new DataAccessException("Error: already taken");
-            }
-            gameDAO.updateGame(request.gameID(), auth.username(), null);
-        } else if (color.equals("BLACK")) {
-            if (game.blackUsername() != null) {
-                throw new DataAccessException("Error: already taken");
-            }
-            gameDAO.updateGame(request.gameID(), null, auth.username());
-        } else {
-            throw new DataAccessException("Error: bad request");
-        }
+        return new JoinGameResult();
     }
 }
