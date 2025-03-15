@@ -15,27 +15,15 @@ public class Server {
     private final Gson gson = new Gson();
 
     public Server() {
-        try {
-            // Initialize database
-            DatabaseManager.createDatabase();
-            DatabaseManager.createTables();
-            
-            // Set to use database implementations
-            DAOFactory.setUseDatabase(true);
-            
-            // Get DAOs from factory
-            UserDAO userDAO = DAOFactory.createUserDAO();
-            GameDAO gameDAO = DAOFactory.createGameDAO();
-            AuthDAO authDAO = DAOFactory.createAuthDAO();
-            
-            // Initialize Services
-            userService = new UserService(userDAO, authDAO);
-            gameService = new GameService(gameDAO, authDAO);
-            clearService = new ClearService(userDAO, gameDAO, authDAO);
-        } catch (DataAccessException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize database", e);
-        }
+        // Initialize DAOs
+        UserDAO userDAO = new MemoryUserDAO();
+        GameDAO gameDAO = new MemoryGameDAO();
+        AuthDAO authDAO = new MemoryAuthDAO();
+        
+        // Initialize Services
+        userService = new UserService(userDAO, authDAO);
+        gameService = new GameService(gameDAO, authDAO);
+        clearService = new ClearService(userDAO, gameDAO, authDAO);
     }
 
     public int run(int desiredPort) {
