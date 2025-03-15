@@ -1,23 +1,35 @@
 package dataaccess;
 
 import model.GameData;
+import model.UserData;
 import org.junit.jupiter.api.*;
 
 import java.util.Collection;
 
 public class MySQLGameDAOTest {
     private static GameDAO gameDAO;
+    private static UserDAO userDAO; // Add this
     
     @BeforeAll
     static void setUp() throws Exception {
         gameDAO = new MySQLGameDAO();
+        userDAO = new MySQLUserDAO(); // Add this
         DatabaseManager.createDatabase();
         DatabaseManager.createTables();
+        
+        // Create test user(s) for foreign key relationships
+        try {
+            UserData testUser = new UserData("whitePlayer", "password", "white@example.com");
+            userDAO.createUser(testUser);
+        } catch (DataAccessException e) {
+            // Ignore if user already exists
+        }
     }
     
     @BeforeEach
     void clearDB() throws Exception {
         gameDAO.clear();
+        // Don't clear users or you'll break your foreign keys
     }
     
     @Test
@@ -63,7 +75,7 @@ public class MySQLGameDAOTest {
         // Positive test: Update game
         int gameID = gameDAO.createGame("Test Game");
         
-        // Update game with white player
+        // Update game with white player - now "whitePlayer" exists in users table
         gameDAO.updateGame(gameID, "whitePlayer", null);
         
         GameData retrievedGame = gameDAO.getGame(gameID);
