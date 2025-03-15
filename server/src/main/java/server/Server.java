@@ -28,8 +28,8 @@ public class Server {
 
     public int run(int desiredPort) {
         try {
-            // DatabaseManager.createDatabase();
-            // DatabaseManager.createTables();
+            DatabaseManager.createDatabase();
+            DatabaseManager.createTables();
 
             Spark.port(desiredPort);
 
