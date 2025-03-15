@@ -110,6 +110,8 @@ public class DatabaseManager {
             }
         } catch (SQLException e) {
             System.err.println("Error counting rows: " + e.getMessage());
+        } catch (DataAccessException e) {
+            System.err.println("Error accessing database: " + e.getMessage());
         }
         System.out.println("Total row count: " + count);
         return count;
