@@ -16,17 +16,13 @@ public class Server {
 
     public Server() {
         try {
-            // Initialize database
             DatabaseManager.createDatabase();
             DatabaseManager.createTables();
             
-            // Directly create MySQL implementations
-            // Use the exact class names that match your file names
-            UserDAO userDAO = new MySQLUserDAO(); // Match your actual file name case
-            GameDAO gameDAO = new MySQLGameDAO(); // Match your actual file name case
-            AuthDAO authDAO = new MySQLAuthDAO(); // Match your actual file name case
+            UserDAO userDAO = new MemoryUserDAO(); 
+            GameDAO gameDAO = new MemoryGameDAO();
+            AuthDAO authDAO = new MemoryAuthDAO();
             
-            // Initialize Services
             userService = new UserService(userDAO, authDAO);
             gameService = new GameService(gameDAO, authDAO);
             clearService = new ClearService(userDAO, gameDAO, authDAO);
@@ -38,12 +34,10 @@ public class Server {
 
     public int run(int desiredPort) {
         try {
-            // Database already initialized in constructor
             
             Spark.port(desiredPort);
             Spark.staticFiles.location("web");
             
-            // Register endpoints
             Spark.delete("/db", this::clearApplication);
             Spark.post("/user", this::register);
             Spark.post("/session", this::login);
@@ -52,7 +46,6 @@ public class Server {
             Spark.post("/game", this::createGame);
             Spark.put("/game", this::joinGame);
 
-            // Handle exceptions
             Spark.exception(DataAccessException.class, this::handleException);
 
             Spark.awaitInitialization();
@@ -63,8 +56,6 @@ public class Server {
         }
     }
 
-
-    // Exception handler
     private void handleException(DataAccessException e, Request req, Response res) {
         res.status(determineStatusCode(e.getMessage()));
         res.body(gson.toJson(Map.of("message", e.getMessage())));
@@ -82,7 +73,6 @@ public class Server {
         }
     }
 
-    // Enpoint hnandlers
     private Object clearApplication(Request req, Response res) {
         try {
             clearService.clearDatabase();
