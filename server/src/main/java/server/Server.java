@@ -20,13 +20,11 @@ public class Server {
             DatabaseManager.createDatabase();
             DatabaseManager.createTables();
             
-            // Set to use database implementations
-            DAOFactory.setUseDatabase(true);
-            
-            // Get DAOs from factory
-            UserDAO userDAO = DAOFactory.createUserDAO();
-            GameDAO gameDAO = DAOFactory.createGameDAO();
-            AuthDAO authDAO = DAOFactory.createAuthDAO();
+            // Directly create MySQL implementations
+            // Use the exact class names that match your file names
+            UserDAO userDAO = new MySQLUserDAO(); // Match your actual file name case
+            GameDAO gameDAO = new MySQLGameDAO(); // Match your actual file name case
+            AuthDAO authDAO = new MySQLAuthDAO(); // Match your actual file name case
             
             // Initialize Services
             userService = new UserService(userDAO, authDAO);
