@@ -14,14 +14,34 @@ public class Server {
     private final ClearService clearService;
     private final Gson gson = new Gson();
 
+    // Default constructor for memory implementation
     public Server() {
+        this(false);
+    }
+    
+    // New constructor that can use either implementation
+    public Server(boolean usePersistence) {
         try {
             DatabaseManager.createDatabase();
             DatabaseManager.createTables();
             
-            UserDAO userDAO = new MemoryUserDAO(); 
-            GameDAO gameDAO = new MemoryGameDAO();
-            AuthDAO authDAO = new MemoryAuthDAO();
+            UserDAO userDAO;
+            GameDAO gameDAO;
+            AuthDAO authDAO;
+            
+            if (usePersistence) {
+                // Use MySQL implementations (with exact class names)
+                userDAO = new MySQLUserDAO();
+                gameDAO = new MySQLGameDAO();
+                authDAO = new MySQLAuthDAO();
+                System.out.println("Using MySQL persistence");
+            } else {
+                // Use memory implementations
+                userDAO = new MemoryUserDAO();
+                gameDAO = new MemoryGameDAO();
+                authDAO = new MemoryAuthDAO();
+                System.out.println("Using in-memory storage");
+            }
             
             userService = new UserService(userDAO, authDAO);
             gameService = new GameService(gameDAO, authDAO);
