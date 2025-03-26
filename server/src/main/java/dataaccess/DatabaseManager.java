@@ -50,7 +50,6 @@ public class DatabaseManager {
      */
     public static void createTables() throws DataAccessException {
         try (Connection conn = getConnection()) {
-            // Create users table
             try (Statement stmt = conn.createStatement()) {
                 String createUsers = "CREATE TABLE IF NOT EXISTS users (" +
                         "username VARCHAR(255) NOT NULL PRIMARY KEY, " +
@@ -79,9 +78,6 @@ public class DatabaseManager {
         }
     }
 
-    /**
-     * Get a connection to the database
-     */
     public static Connection getConnection() throws DataAccessException {
         try {
             return DriverManager.getConnection(CONNECTION_URL + "/" + DATABASE_NAME, USER, PASSWORD);
@@ -89,46 +85,4 @@ public class DatabaseManager {
             throw new DataAccessException("Unable to connect to database: " + e.getMessage());
         }
     }
-
-    /**
-     * Counts the total number of rows across all database tables.
-     * This method is intentionally kept for debugging and testing purposes.
-     * 
-     * @return The total number of rows in all tables
-     */
-    // @SuppressWarnings("unused") // Suppress the warning since this is kept for debugging
-    // public static int getDatabaseRowCount() {
-    //     int count = 0;
-    //     try (Connection conn = getConnection()) {
-    //         try (Statement stmt = conn.createStatement()) {
-    //             count = countRowsInAllTables(stmt);
-    //         }
-    //     } catch (SQLException | DataAccessException e) {
-    //         System.err.println("Error counting rows: " + e.getMessage());
-    //     }
-    //     System.out.println("Total row count: " + count);
-    //     return count;
-    // }
-
-    // private static int countRowsInAllTables(Statement stmt) throws SQLException {
-    //     int count = 0;
-    //     String[] tablesToCheck = {"users", "auth", "games"};
-        
-    //     for (String tableName : tablesToCheck) {
-    //         count += getTableRowCount(stmt, tableName);
-    //     }
-        
-    //     return count;
-    // }
-
-    // private static int getTableRowCount(Statement stmt, String tableName) throws SQLException {
-    //     try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tableName)) {
-    //         if (rs.next()) {
-    //             int tableCount = rs.getInt(1);
-    //             System.out.println(tableName + " has " + tableCount + " rows");
-    //             return tableCount;
-    //         }
-    //     }
-    //     return 0;
-    // }
 }
