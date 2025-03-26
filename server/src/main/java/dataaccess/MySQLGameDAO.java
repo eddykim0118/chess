@@ -93,16 +93,21 @@ public class MySQLGameDAO implements GameDAO {
     
     @Override
     public void updateGame(int gameID, String whiteUsername, String blackUsername) throws DataAccessException {
+        GameData game = getGame(gameID);
+        if (game == null) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
         try (var conn = DatabaseManager.getConnection();
-            var stmt = conn.prepareStatement("UPDATE games SET whiteUsername = ?, blackUsername = ? WHERE gameID = ?")) {
-                stmt.setString(1, whiteUsername);
-                stmt.setString(2, blackUsername);
-                stmt.setInt(3, gameID);
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new DataAccessException("Game not found");
-            }
+             var stmt = conn.prepareStatement("UPDATE games SET whiteUsername = ?, blackUsername = ? WHERE gameID = ?")) {
+            stmt.setString(1, whiteUsername);
+            stmt.setString(2, blackUsername);
+            stmt.setInt(3, gameID);
+            stmt.executeUpdate();
         } catch (SQLException e) {
+            if (e.getMessage().contains("foreign key constraint")) {
+                throw new DataAccessException("Error: bad request");
+            }
             throw new DataAccessException("Error updating game: " + e.getMessage());
         }
     }

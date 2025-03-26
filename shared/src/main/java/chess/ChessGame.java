@@ -192,12 +192,10 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
                 ChessPosition pos = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(pos);
                 
-                // Skip empty squares or pieces of the same team
                 if (piece == null || piece.getTeamColor() == teamColor) {
                     continue;
                 }
                 
-                // Check if this opponent piece can attack the position
                 if (canPieceAttackPosition(piece, board, pos, position)) {
                     return true;
                 }
@@ -238,17 +236,14 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
     }
 
     private boolean canMoveWithoutCheck(TeamColor teamColor, ChessBoard boardToCheck) {
-        // Find king position
         ChessPosition kingPosition = findKingPosition(teamColor, boardToCheck);
         if (kingPosition == null) {
             return false;
         }
         
-        // Check if any piece can make a valid move
         return canAnyPieceMakeValidMove(teamColor, boardToCheck);
     }
 
-    // New helper method to reduce nesting
     private boolean canAnyPieceMakeValidMove(TeamColor teamColor, ChessBoard boardToCheck) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
@@ -259,7 +254,6 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
                     continue;
                 }
                 
-                // Get potential moves for this piece
                 if (canPieceMakeValidMove(piece, position, teamColor, boardToCheck)) {
                     return true;
                 }
@@ -268,20 +262,17 @@ private ChessPosition findKingPosition(TeamColor teamColor, ChessBoard board) {
         return false;
     }
 
-    // Additional helper method to further reduce nesting
     private boolean canPieceMakeValidMove(ChessPiece piece, ChessPosition position, 
                                        TeamColor teamColor, ChessBoard boardToCheck) {
         Collection<ChessMove> pieceMoves = piece.pieceMoves(boardToCheck, position);
         
         for (ChessMove move : pieceMoves) {
-            // Try the move on a temporary board
             ChessBoard tempBoard = cloneBoard(boardToCheck);
             tempBoard.addPiece(move.getEndPosition(), piece);
             tempBoard.removePiece(position);
             
-            // Check if king is still in check after this move
             if (!isInCheck(teamColor, tempBoard)) {
-                return true; // Found a valid move
+                return true;
             }
         }
         return false;

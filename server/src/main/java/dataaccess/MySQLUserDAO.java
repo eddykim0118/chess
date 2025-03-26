@@ -18,24 +18,29 @@ public class MySQLUserDAO implements UserDAO {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection()) {
-            try {
-                conn.setAutoCommit(true);
-                try (var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
-                    stmt.setString(1, user.username());
-                    String hashPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
-                    stmt.setString(2, hashPassword);
-                    stmt.setString(3, user.email());
-                    stmt.executeUpdate();
-                }
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
+             stmt.setString(1, user.username());
+             String hashPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+             stmt.setString(2, hashPassword);
+             stmt.setString(3, user.email());
+             stmt.executeUpdate();
+            // try {
+            //     conn.setAutoCommit(true);
+            //     try (var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
+            //         stmt.setString(1, user.username());
+            //         String hashPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+            //         stmt.setString(2, hashPassword);
+            //         stmt.setString(3, user.email());
+            //         stmt.executeUpdate();
+            //     }
             } catch (SQLException e) {
+                if (e.getMessage().contains("Duplicate entry") && e.getMessage().contains("PRIMARY")) {
+                    throw new DataAccessException("Error: username already taken");
+                }
                 throw new DataAccessException("Error creating user: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            throw new DataAccessException("Error closing connection: " + e.getMessage());
         }
-    }
-
     @Override
     public UserData getUser(String username) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection();

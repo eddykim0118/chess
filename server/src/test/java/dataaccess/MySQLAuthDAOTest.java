@@ -21,14 +21,12 @@ public class MySQLAuthDAOTest {
         authDAO.clear();
         userDAO.clear();
         
-        // Create a test user for auth operations
         UserData testUser = new UserData("testUser", "password", "test@example.com");
         userDAO.createUser(testUser);
     }
     
     @Test
     void createAuthPositive() throws Exception {
-        // Positive test: Auth token successfully created
         String authToken = authDAO.createAuth("testUser");
         
         Assertions.assertNotNull(authToken);
@@ -39,8 +37,6 @@ public class MySQLAuthDAOTest {
     
     @Test
     void createAuthNegative() throws Exception {
-        // Negative test: Create auth for non-existent user
-        // Since our foreign key constraint will fail
         Assertions.assertThrows(DataAccessException.class, () -> {
             authDAO.createAuth("nonExistentUser");
         });
@@ -48,7 +44,6 @@ public class MySQLAuthDAOTest {
     
     @Test
     void getAuthPositive() throws Exception {
-        // Positive test: Retrieve existing auth
         String authToken = authDAO.createAuth("testUser");
         
         AuthData authData = authDAO.getAuth(authToken);
@@ -59,14 +54,12 @@ public class MySQLAuthDAOTest {
     
     @Test
     void getAuthNegative() throws Exception {
-        // Negative test: Attempt to retrieve non-existent auth
         AuthData authData = authDAO.getAuth("nonExistentToken");
         Assertions.assertNull(authData);
     }
     
     @Test
     void deleteAuthPositive() throws Exception {
-        // Positive test: Delete existing auth
         String authToken = authDAO.createAuth("testUser");
         
         authDAO.deleteAuth(authToken);
@@ -77,7 +70,6 @@ public class MySQLAuthDAOTest {
     
     @Test
     void deleteAuthNegative() throws Exception {
-        // Negative test: Delete non-existent auth
         Assertions.assertThrows(DataAccessException.class, () -> {
             authDAO.deleteAuth("nonExistentToken");
         });
@@ -85,13 +77,11 @@ public class MySQLAuthDAOTest {
     
     @Test
     void clearPositive() throws Exception {
-        // Positive test: Clear all auth tokens
         authDAO.createAuth("testUser");
         
         authDAO.clear();
         
-        // Try to get the auth token - should be null after clearing
-        String authToken = "anyToken"; // This doesn't matter since we cleared all tokens
+        String authToken = "anyToken";
         AuthData authData = authDAO.getAuth(authToken);
         Assertions.assertNull(authData);
     }
