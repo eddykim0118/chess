@@ -19,9 +19,9 @@ public class Server {
             DatabaseManager.createDatabase();
             DatabaseManager.createTables();
             
-            UserDAO userDAO = new MemoryUserDAO(); 
-            GameDAO gameDAO = new MemoryGameDAO();
-            AuthDAO authDAO = new MemoryAuthDAO();
+            UserDAO userDAO = new MySQLUserDAO();
+            GameDAO gameDAO = new MySQLGameDAO();
+            AuthDAO authDAO = new MySQLAuthDAO();
             
             userService = new UserService(userDAO, authDAO);
             gameService = new GameService(gameDAO, authDAO);
