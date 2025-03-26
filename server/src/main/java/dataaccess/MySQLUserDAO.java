@@ -4,7 +4,7 @@ import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 import java.sql.SQLException;
 
-public class MySqlUserDAO implements UserDAO {
+public class MySQLUserDAO implements UserDAO {
     
     @Override
     public void clear() throws DataAccessException {
