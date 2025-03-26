@@ -4,7 +4,7 @@ import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 import java.sql.SQLException;
 
-public class MySQLUserDAO implements UserDAO {
+public class MySqlUserDAO implements UserDAO {
     
     @Override
     public void clear() throws DataAccessException {
@@ -18,16 +18,19 @@ public class MySQLUserDAO implements UserDAO {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-            var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
+        try (var conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(true);
+            try (var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
                 stmt.setString(1, user.username());
                 String hashPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
                 stmt.setString(2, hashPassword);
                 stmt.setString(3, user.email());
-                stmt.executeUpdate(); // Execute the statement
+                stmt.executeUpdate();
+            
             } catch (SQLException e) {
                 throw new DataAccessException("Error creating user" + e.getMessage());
             }
+        }
     }
 
     @Override
