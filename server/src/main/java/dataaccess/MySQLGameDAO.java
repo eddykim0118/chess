@@ -4,6 +4,7 @@ import chess.ChessGame;
 import com.google.gson.Gson;
 import model.GameData;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -18,42 +19,73 @@ public class MySQLGameDAO implements GameDAO {
     
     @Override
     public void clear() throws DataAccessException {
-
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement("DELETE FROM games")) {
-            stmt.executeUpdate();
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // Ensure we're using a transaction
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            
+            try (var stmt = conn.prepareStatement("DELETE FROM games")) {
+                stmt.executeUpdate();
+                conn.commit(); // Explicitly commit the transaction
+            } catch (SQLException e) {
+                conn.rollback(); // Rollback on error
+                throw new DataAccessException("Error clearing games table: " + e.getMessage());
+            } finally {
+                // Restore original autoCommit setting
+                conn.setAutoCommit(originalAutoCommit);
+            }
         } catch (SQLException e) {
-            throw new DataAccessException("Error clearing games table" + e.getMessage());
+            throw new DataAccessException("Database connection error: " + e.getMessage());
         }
     }
     
     @Override
     public int createGame(String gameName) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement("INSERT INTO games (gameName, game) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setString(1, gameName);
-            // Create a new empty game
-            ChessGame game = new ChessGame();
-            String gameJson = gson.toJson(game);
-            stmt.setString(2, gameJson);
-            stmt.executeUpdate();
+        if (gameName == null) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // Ensure we're using a transaction
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
             
-            try (var rs = stmt.getGeneratedKeys()) { 
-                if (rs.next()) {
-                    return rs.getInt(1);
+            try (var stmt = conn.prepareStatement("INSERT INTO games (gameName, game) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, gameName);
+                // Create a new empty game
+                ChessGame game = new ChessGame();
+                String gameJson = gson.toJson(game);
+                stmt.setString(2, gameJson);
+                stmt.executeUpdate();
+                
+                int gameId;
+                try (var rs = stmt.getGeneratedKeys()) { 
+                    if (rs.next()) {
+                        gameId = rs.getInt(1);
+                    } else {
+                        throw new DataAccessException("Failed to create game - no ID returned");
+                    }
                 }
-                throw new DataAccessException("Failed to create game");
+                
+                conn.commit(); // Explicitly commit the transaction
+                return gameId;
+            } catch (SQLException e) {
+                conn.rollback(); // Rollback on error
+                throw new DataAccessException("Error creating game: " + e.getMessage());
+            } finally {
+                // Restore original autoCommit setting
+                conn.setAutoCommit(originalAutoCommit);
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error creating game" + e.getMessage());
+            throw new DataAccessException("Database connection error: " + e.getMessage());
         }
     }
     
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement("SELECT * FROM games WHERE gameID = ?")) {
-                stmt.setInt(1, gameID);
+            stmt.setInt(1, gameID);
             try (var rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     String whiteUsername = rs.getString("whiteUsername");
@@ -63,17 +95,17 @@ public class MySQLGameDAO implements GameDAO {
                     ChessGame chessGame = gson.fromJson(gameJson, ChessGame.class);
                     return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
                 }
-                return null;
+                throw new DataAccessException("Error: bad request");
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error getting game" + e.getMessage());
+            throw new DataAccessException("Error getting game: " + e.getMessage());
         }
     }
     
     @Override
     public Collection<GameData> listGames() throws DataAccessException {
         var games = new ArrayList<GameData>();
-        try (var conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement("SELECT * FROM games");
              var rs = stmt.executeQuery()) {
             while (rs.next()) {
@@ -87,29 +119,61 @@ public class MySQLGameDAO implements GameDAO {
             }
             return games;
         } catch (SQLException e) {
-            throw new DataAccessException("Error listing games" + e.getMessage());
+            throw new DataAccessException("Error listing games: " + e.getMessage());
         }
     }
     
     @Override
     public void updateGame(int gameID, String whiteUsername, String blackUsername) throws DataAccessException {
-        GameData game = getGame(gameID);
-        if (game == null) {
-            throw new DataAccessException("Error: bad request");
-        }
-        
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement("UPDATE games SET whiteUsername = ?, blackUsername = ? WHERE gameID = ?")) {
-            stmt.setString(1, whiteUsername);
-            stmt.setString(2, blackUsername);
-            stmt.setInt(3, gameID);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            if (e.getMessage().contains("foreign key constraint")) {
-                throw new DataAccessException("Error: bad request");
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // First check if the game exists
+            GameData game = null;
+            try (var checkStmt = conn.prepareStatement("SELECT * FROM games WHERE gameID = ?")) {
+                checkStmt.setInt(1, gameID);
+                try (var rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        String existingWhite = rs.getString("whiteUsername");
+                        String existingBlack = rs.getString("blackUsername");
+                        String gameName = rs.getString("gameName");
+                        String gameJson = rs.getString("game");
+                        ChessGame chessGame = gson.fromJson(gameJson, ChessGame.class);
+                        game = new GameData(gameID, existingWhite, existingBlack, gameName, chessGame);
+                    } else {
+                        throw new DataAccessException("Error: bad request");
+                    }
+                }
             }
-            throw new DataAccessException("Error updating game: " + e.getMessage());
+            
+            // Ensure we're using a transaction
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            
+            try {
+                // Update with new or existing usernames
+                try (var stmt = conn.prepareStatement("UPDATE games SET whiteUsername = ?, blackUsername = ? WHERE gameID = ?")) {
+                    stmt.setString(1, whiteUsername != null ? whiteUsername : game.whiteUsername());
+                    stmt.setString(2, blackUsername != null ? blackUsername : game.blackUsername());
+                    stmt.setInt(3, gameID);
+                    
+                    int rowsAffected = stmt.executeUpdate();
+                    if (rowsAffected == 0) {
+                        throw new DataAccessException("Failed to update game - no rows affected");
+                    }
+                }
+                
+                conn.commit(); // Explicitly commit the transaction
+            } catch (SQLException e) {
+                conn.rollback(); // Rollback on error
+                if (e.getMessage().contains("foreign key constraint")) {
+                    throw new DataAccessException("Error: bad request");
+                }
+                throw new DataAccessException("Error updating game: " + e.getMessage());
+            } finally {
+                // Restore original autoCommit setting
+                conn.setAutoCommit(originalAutoCommit);
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Database connection error: " + e.getMessage());
         }
     }
-
 }
