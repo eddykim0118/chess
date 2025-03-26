@@ -11,8 +11,10 @@ public class MySQLAuthDAO implements AuthDAO {
     public void clear() throws DataAccessException {
         try (Connection conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement("DELETE FROM auth")) {
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Cleared " + rowsAffected + " rows from auth table");
         } catch (SQLException e) {
+            System.err.println("Error in clear auth: " + e.getMessage());
             throw new DataAccessException("Error clearing auth table: " + e.getMessage());
         }
     }
@@ -40,11 +42,17 @@ public class MySQLAuthDAO implements AuthDAO {
             try (var stmt = conn.prepareStatement("INSERT INTO auth (authToken, username) VALUES (?, ?)")) {
                 stmt.setString(1, authToken);
                 stmt.setString(2, username);
-                stmt.executeUpdate();
+                int rowsAffected = stmt.executeUpdate();
+                
+                if (rowsAffected > 0) {
+                    System.out.println("Auth token created for user: " + username);
+                    return authToken;
+                } else {
+                    throw new DataAccessException("Failed to create auth token");
+                }
             }
-            
-            return authToken;
         } catch (SQLException e) {
+            System.err.println("Error in createAuth: " + e.getMessage());
             throw new DataAccessException("Error creating auth token: " + e.getMessage());
         }
     }
@@ -66,6 +74,7 @@ public class MySQLAuthDAO implements AuthDAO {
                 return null;
             }
         } catch (SQLException e) {
+            System.err.println("Error in getAuth: " + e.getMessage());
             throw new DataAccessException("Error getting auth: " + e.getMessage());
         }
     }
@@ -83,7 +92,9 @@ public class MySQLAuthDAO implements AuthDAO {
             if (rowsAffected == 0) {
                 throw new DataAccessException("Error: unauthorized");
             }
+            System.out.println("Auth token deleted: " + authToken);
         } catch (SQLException e) {
+            System.err.println("Error in deleteAuth: " + e.getMessage());
             throw new DataAccessException("Error deleting auth token: " + e.getMessage());
         }
     }

@@ -9,19 +9,28 @@ public class MySQLUserDAO implements UserDAO {
     
     @Override
     public void clear() throws DataAccessException {
-        // Use a separate connection for each DAO operation
         try (Connection conn = DatabaseManager.getConnection()) {
-            // Clear auth first (because of foreign key constraints)
-            try (var stmt = conn.prepareStatement("DELETE FROM auth")) {
+            // Temporarily disable foreign key checks
+            try (var stmt = conn.prepareStatement("SET FOREIGN_KEY_CHECKS = 0")) {
                 stmt.executeUpdate();
             }
             
-            // Then clear users
-            try (var stmt = conn.prepareStatement("DELETE FROM users")) {
+            // Clear tables (order matters due to foreign key constraints)
+            try (var authStmt = conn.prepareStatement("DELETE FROM auth");
+                 var gamesStmt = conn.prepareStatement("DELETE FROM games");
+                 var usersStmt = conn.prepareStatement("DELETE FROM users")) {
+                authStmt.executeUpdate();
+                gamesStmt.executeUpdate();
+                usersStmt.executeUpdate();
+            }
+            
+            // Re-enable foreign key checks
+            try (var stmt = conn.prepareStatement("SET FOREIGN_KEY_CHECKS = 1")) {
                 stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error: failed to clear users: " + e.getMessage());
+            System.err.println("Error in clear: " + e.getMessage());
+            throw new DataAccessException("Error clearing database: " + e.getMessage());
         }
     }
 
@@ -40,11 +49,13 @@ public class MySQLUserDAO implements UserDAO {
                 stmt.setString(2, hashedPassword);
                 stmt.setString(3, user.email());
                 stmt.executeUpdate();
+                System.out.println("User created: " + user.username());
             }
         } catch (SQLException e) {
-            if (e.getMessage().contains("Duplicate entry") && e.getMessage().contains("PRIMARY")) {
+            if (e.getMessage().contains("Duplicate entry")) {
                 throw new DataAccessException("Error: already taken");
             }
+            System.err.println("Error in createUser: " + e.getMessage());
             throw new DataAccessException("Error creating user: " + e.getMessage());
         }
     }
@@ -65,6 +76,7 @@ public class MySQLUserDAO implements UserDAO {
                 return null;
             }
         } catch (SQLException e) {
+            System.err.println("Error in getUser: " + e.getMessage());
             throw new DataAccessException("Error getting user: " + e.getMessage());
         }
     }

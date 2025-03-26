@@ -52,18 +52,21 @@ public class DatabaseManager {
     public static void createTables() throws DataAccessException {
         try (Connection conn = getConnection()) {
             try (Statement stmt = conn.createStatement()) {
+                // Create users table first (since it's referenced by other tables)
                 String createUsers = "CREATE TABLE IF NOT EXISTS users (" +
                         "username VARCHAR(255) NOT NULL PRIMARY KEY, " +
                         "password VARCHAR(255) NOT NULL, " +
                         "email VARCHAR(255) NOT NULL)";
                 stmt.executeUpdate(createUsers);
                 
+                // Then create auth table (which references users)
                 String createAuth = "CREATE TABLE IF NOT EXISTS auth (" +
                         "authToken VARCHAR(255) NOT NULL PRIMARY KEY, " +
                         "username VARCHAR(255) NOT NULL, " +
                         "FOREIGN KEY (username) REFERENCES users(username))";
                 stmt.executeUpdate(createAuth);
                 
+                // Finally create games table (which references users)
                 String createGames = "CREATE TABLE IF NOT EXISTS games (" +
                         "gameID INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
                         "whiteUsername VARCHAR(255), " +
@@ -81,20 +84,21 @@ public class DatabaseManager {
 
     public static Connection getConnection() throws DataAccessException {
         try {
-            Connection conn = DriverManager.getConnection(CONNECTION_URL + "/" + DATABASE_NAME, USER, PASSWORD);
-            // Set autocommit to true to ensure all operations are committed
+            // Add MySQL specific parameters for reliability
+            String fullUrl = CONNECTION_URL + "/" + DATABASE_NAME + 
+                    "?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC";
+            
+            Connection conn = DriverManager.getConnection(fullUrl, USER, PASSWORD);
             conn.setAutoCommit(true);
             return conn;
         } catch (SQLException e) {
+            System.err.println("Failed to get database connection: " + e.getMessage());
             throw new DataAccessException("Unable to connect to database: " + e.getMessage());
         }
     }
 
     /**
      * Counts the total number of rows across all database tables.
-     * This method is intentionally kept for debugging and testing purposes.
-     * 
-     * @return The total number of rows in all tables
      */
     public static int getDatabaseRowCount() {
         int count = 0;

@@ -21,8 +21,10 @@ public class MySQLGameDAO implements GameDAO {
     public void clear() throws DataAccessException {
         try (Connection conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement("DELETE FROM games")) {
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Cleared " + rowsAffected + " rows from games table");
         } catch (SQLException e) {
+            System.err.println("Error in clear games: " + e.getMessage());
             throw new DataAccessException("Error clearing games table: " + e.getMessage());
         }
     }
@@ -44,11 +46,14 @@ public class MySQLGameDAO implements GameDAO {
             
             try (var rs = stmt.getGeneratedKeys()) { 
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    int gameId = rs.getInt(1);
+                    System.out.println("Game created with ID: " + gameId);
+                    return gameId;
                 }
                 throw new DataAccessException("Failed to create game - no ID returned");
             }
         } catch (SQLException e) {
+            System.err.println("Error in createGame: " + e.getMessage());
             throw new DataAccessException("Error creating game: " + e.getMessage());
         }
     }
@@ -70,6 +75,7 @@ public class MySQLGameDAO implements GameDAO {
                 return null;
             }
         } catch (SQLException e) {
+            System.err.println("Error in getGame: " + e.getMessage());
             throw new DataAccessException("Error getting game: " + e.getMessage());
         }
     }
@@ -89,8 +95,10 @@ public class MySQLGameDAO implements GameDAO {
                 ChessGame chessGame = gson.fromJson(gameJson, ChessGame.class);
                 games.add(new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame));
             }
+            System.out.println("Listed " + games.size() + " games");
             return games;
         } catch (SQLException e) {
+            System.err.println("Error in listGames: " + e.getMessage());
             throw new DataAccessException("Error listing games: " + e.getMessage());
         }
     }
@@ -109,13 +117,16 @@ public class MySQLGameDAO implements GameDAO {
             stmt.setString(2, blackUsername != null ? blackUsername : game.blackUsername());
             stmt.setInt(3, gameID);
             int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
+            if (rowsAffected > 0) {
+                System.out.println("Game updated with ID: " + gameID);
+            } else {
                 throw new DataAccessException("Error: bad request");
             }
         } catch (SQLException e) {
             if (e.getMessage().contains("foreign key constraint")) {
                 throw new DataAccessException("Error: bad request");
             }
+            System.err.println("Error in updateGame: " + e.getMessage());
             throw new DataAccessException("Error updating game: " + e.getMessage());
         }
     }
