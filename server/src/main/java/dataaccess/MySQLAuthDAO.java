@@ -1,39 +1,19 @@
 package dataaccess;
 
 import model.AuthData;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.sql.Connection;
 
 public class MySQLAuthDAO implements AuthDAO {
     
     @Override
     public void clear() throws DataAccessException {
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getConnection();
-            conn.setAutoCommit(false);
-            
-            try (var stmt = conn.prepareStatement("DELETE FROM auth")) {
-                stmt.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                if (conn != null) {
-                    conn.rollback();
-                }
-                throw new DataAccessException("Error clearing auth table: " + e.getMessage());
-            }
+        try (Connection conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement("DELETE FROM auth")) {
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("Database connection error: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close connection: " + e.getMessage());
-                }
-            }
+            throw new DataAccessException("Error clearing auth table: " + e.getMessage());
         }
     }
     
@@ -43,12 +23,8 @@ public class MySQLAuthDAO implements AuthDAO {
             throw new DataAccessException("Error: unauthorized");
         }
         
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getConnection();
-            conn.setAutoCommit(false);
-            
-            // First check if the username exists
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // First check if the username exists in the users table
             try (var checkStmt = conn.prepareStatement("SELECT username FROM users WHERE username = ?")) {
                 checkStmt.setString(1, username);
                 try (var rs = checkStmt.executeQuery()) {
@@ -56,32 +32,20 @@ public class MySQLAuthDAO implements AuthDAO {
                         throw new DataAccessException("Error: unauthorized");
                     }
                 }
-                
-                String authToken = UUID.randomUUID().toString();
-                try (var stmt = conn.prepareStatement("INSERT INTO auth (authToken, username) VALUES (?, ?)")) {
-                    stmt.setString(1, authToken);
-                    stmt.setString(2, username);
-                    stmt.executeUpdate();
-                    conn.commit();
-                    return authToken;
-                }
-            } catch (SQLException e) {
-                if (conn != null) {
-                    conn.rollback();
-                }
-                throw new DataAccessException("Error creating auth token: " + e.getMessage());
             }
+            
+            // Generate a unique auth token
+            String authToken = UUID.randomUUID().toString();
+            
+            try (var stmt = conn.prepareStatement("INSERT INTO auth (authToken, username) VALUES (?, ?)")) {
+                stmt.setString(1, authToken);
+                stmt.setString(2, username);
+                stmt.executeUpdate();
+            }
+            
+            return authToken;
         } catch (SQLException e) {
-            throw new DataAccessException("Database connection error: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close connection: " + e.getMessage());
-                }
-            }
+            throw new DataAccessException("Error creating auth token: " + e.getMessage());
         }
     }
     
@@ -112,35 +76,15 @@ public class MySQLAuthDAO implements AuthDAO {
             throw new DataAccessException("Error: unauthorized");
         }
         
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getConnection();
-            conn.setAutoCommit(false);
-            
-            try (var stmt = conn.prepareStatement("DELETE FROM auth WHERE authToken = ?")) {
-                stmt.setString(1, authToken);
-                int rowsAffected = stmt.executeUpdate();
-                if (rowsAffected == 0) {
-                    throw new DataAccessException("Error: unauthorized");
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                if (conn != null) {
-                    conn.rollback();
-                }
-                throw new DataAccessException("Error deleting auth token: " + e.getMessage());
+        try (Connection conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement("DELETE FROM auth WHERE authToken = ?")) {
+            stmt.setString(1, authToken);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new DataAccessException("Error: unauthorized");
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Database connection error: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close connection: " + e.getMessage());
-                }
-            }
+            throw new DataAccessException("Error deleting auth token: " + e.getMessage());
         }
     }
 }

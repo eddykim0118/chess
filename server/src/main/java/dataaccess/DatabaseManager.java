@@ -40,6 +40,7 @@ public class DatabaseManager {
             try (var preparedStatement = conn.prepareStatement(statement)) {
                 preparedStatement.executeUpdate();
             }
+            conn.close();
         } catch (SQLException e) {
             throw new DataAccessException("Unable to create database: " + e.getMessage());
         }
@@ -80,7 +81,10 @@ public class DatabaseManager {
 
     public static Connection getConnection() throws DataAccessException {
         try {
-            return DriverManager.getConnection(CONNECTION_URL + "/" + DATABASE_NAME, USER, PASSWORD);
+            Connection conn = DriverManager.getConnection(CONNECTION_URL + "/" + DATABASE_NAME, USER, PASSWORD);
+            // Set autocommit to true to ensure all operations are committed
+            conn.setAutoCommit(true);
+            return conn;
         } catch (SQLException e) {
             throw new DataAccessException("Unable to connect to database: " + e.getMessage());
         }
@@ -92,7 +96,6 @@ public class DatabaseManager {
      * 
      * @return The total number of rows in all tables
      */
-    @SuppressWarnings("unused")
     public static int getDatabaseRowCount() {
         int count = 0;
         try (Connection conn = getConnection()) {

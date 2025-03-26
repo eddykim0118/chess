@@ -2,41 +2,26 @@ package dataaccess;
 
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
-import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Connection;
 
 public class MySQLUserDAO implements UserDAO {
     
     @Override
     public void clear() throws DataAccessException {
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getConnection();
-            conn.setAutoCommit(false);
-            
-            try (var stmt = conn.prepareStatement("DELETE FROM auth");
-                 var stmt2 = conn.prepareStatement("DELETE FROM users")) {
-                // Clear auth first because of foreign key constraints
+        // Use a separate connection for each DAO operation
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // Clear auth first (because of foreign key constraints)
+            try (var stmt = conn.prepareStatement("DELETE FROM auth")) {
                 stmt.executeUpdate();
-                stmt2.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                if (conn != null) {
-                    conn.rollback();
-                }
-                throw new DataAccessException("Error: failed to clear users: " + e.getMessage());
+            }
+            
+            // Then clear users
+            try (var stmt = conn.prepareStatement("DELETE FROM users")) {
+                stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Database connection error: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close connection: " + e.getMessage());
-                }
-            }
+            throw new DataAccessException("Error: failed to clear users: " + e.getMessage());
         }
     }
 
@@ -46,38 +31,21 @@ public class MySQLUserDAO implements UserDAO {
             throw new DataAccessException("Error: bad request");
         }
         
-        Connection conn = null;
-        try {
-            conn = DatabaseManager.getConnection();
-            conn.setAutoCommit(false);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            // Use BCrypt to hash the password
+            String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
             
             try (var stmt = conn.prepareStatement("INSERT INTO users (username, password, email) VALUES (?, ?, ?)")) {
                 stmt.setString(1, user.username());
-                String hashPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
-                stmt.setString(2, hashPassword);
+                stmt.setString(2, hashedPassword);
                 stmt.setString(3, user.email());
                 stmt.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                if (conn != null) {
-                    conn.rollback();
-                }
-                if (e.getMessage().contains("Duplicate entry") && e.getMessage().contains("PRIMARY")) {
-                    throw new DataAccessException("Error: already taken");
-                }
-                throw new DataAccessException("Error creating user: " + e.getMessage());
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Database connection error: " + e.getMessage());
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close connection: " + e.getMessage());
-                }
+            if (e.getMessage().contains("Duplicate entry") && e.getMessage().contains("PRIMARY")) {
+                throw new DataAccessException("Error: already taken");
             }
+            throw new DataAccessException("Error creating user: " + e.getMessage());
         }
     }
     
