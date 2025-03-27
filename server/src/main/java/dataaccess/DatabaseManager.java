@@ -32,6 +32,8 @@ public class DatabaseManager {
                 System.out.println("Database: " + DATABASE_NAME);
                 System.out.println("User: " + USER);
             }
+            // Log database configuration
+            System.out.println("Database configuration loaded successfully");
         } catch (Exception ex) {
             System.err.println("CRITICAL ERROR: Unable to process db.properties: " + ex.getMessage());
             ex.printStackTrace();

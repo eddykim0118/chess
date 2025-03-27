@@ -60,7 +60,7 @@ public class MySQLAuthDAO implements AuthDAO {
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
         if (authToken == null) {
-            throw new DataAccessException("Error: unauthorized");
+            return null; // Return null instead of throwing exception
         }
         
         try (Connection conn = DatabaseManager.getConnection();
@@ -71,7 +71,7 @@ public class MySQLAuthDAO implements AuthDAO {
                     String username = rs.getString("username");
                     return new AuthData(authToken, username);
                 }
-                return null;
+                return null; // Return null for non-existent tokens
             }
         } catch (SQLException e) {
             System.err.println("Error in getAuth: " + e.getMessage());
