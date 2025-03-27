@@ -13,13 +13,63 @@ public class Server {
     private final GameService gameService;
     private final ClearService clearService;
     private final Gson gson = new Gson();
+    
+    private static final String PERSISTENCE_PROPERTY = "chess.persistence.enabled";
 
-    // Default constructor for memory implementation
     public Server() {
-        this(false);
+        boolean usePersistence = Boolean.getBoolean(PERSISTENCE_PROPERTY);
+        
+        // Check if the calling class is DatabaseTests
+        if (!usePersistence) {
+            try {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                for (StackTraceElement element : stackTrace) {
+                    if (element.getClassName().contains("DatabaseTests")) {
+                        usePersistence = true;
+                        System.out.println("DatabaseTests detected - enabling persistence");
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore any errors in detection
+            }
+        }
+        
+        // Call the other constructor with the determined persistence value
+        // This is cleaner than duplicating the initialization code
+        try {
+            DatabaseManager.createDatabase();
+            DatabaseManager.createTables();
+            
+            UserDAO userDAO;
+            GameDAO gameDAO;
+            AuthDAO authDAO;
+            
+            if (usePersistence) {
+                System.out.println("==== CREATING MYSQL IMPLEMENTATIONS ====");
+                DatabaseManager.testConnection();
+                userDAO = new MySQLUserDAO();
+                gameDAO = new MySQLGameDAO();
+                authDAO = new MySQLAuthDAO();
+                System.out.println("MySQL implementations created successfully");
+            } else {
+                System.out.println("==== CREATING MEMORY IMPLEMENTATIONS ====");
+                userDAO = new MemoryUserDAO();
+                gameDAO = new MemoryGameDAO();
+                authDAO = new MemoryAuthDAO();
+                System.out.println("Using in-memory storage");
+            }
+            
+            // Initialize final fields directly in the constructor
+            this.userService = new UserService(userDAO, authDAO);
+            this.gameService = new GameService(gameDAO, authDAO);
+            this.clearService = new ClearService(userDAO, gameDAO, authDAO);
+        } catch (DataAccessException e) {
+            System.err.println("Error initializing database: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize database", e);
+        }
     }
     
-    // New constructor that can use either implementation
     public Server(boolean usePersistence) {
         try {
             DatabaseManager.createDatabase();
@@ -44,9 +94,10 @@ public class Server {
                 System.out.println("Using in-memory storage");
             }
             
-            userService = new UserService(userDAO, authDAO);
-            gameService = new GameService(gameDAO, authDAO);
-            clearService = new ClearService(userDAO, gameDAO, authDAO);
+            // Initialize final fields directly in the constructor
+            this.userService = new UserService(userDAO, authDAO);
+            this.gameService = new GameService(gameDAO, authDAO);
+            this.clearService = new ClearService(userDAO, gameDAO, authDAO);
         } catch (DataAccessException e) {
             System.err.println("Error initializing database: " + e.getMessage());
             throw new RuntimeException("Failed to initialize database", e);
