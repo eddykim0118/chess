@@ -4,6 +4,8 @@ import model.UserData;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 public class MemoryUserDAO implements UserDAO {
     private final Map<String, UserData> users = new HashMap<>();
 
@@ -14,18 +16,28 @@ public class MemoryUserDAO implements UserDAO {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
+        if (user == null || user.username() == null || user.password() == null || user.email() == null) {
+            throw new DataAccessException("Error: bad request");
+        }
+        
         if (users.containsKey(user.username())) {
             throw new DataAccessException("Error: already taken");
         }
-        users.put(user.username(), user);
+        
+        // Hash the password before storing
+        String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+        UserData userWithHashedPassword = new UserData(user.username(), hashedPassword, user.email());
+        
+        users.put(user.username(), userWithHashedPassword);
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        UserData user = users.get(username);
-        if (user == null) {
-            throw new DataAccessException("Error: unauthorized");
+        if (username == null) {
+            throw new DataAccessException("Error: bad request");
         }
-        return user;
+        
+        // Simply return the user from the map - no password checking here
+        return users.get(username);
     }
 }

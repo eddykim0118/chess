@@ -1,5 +1,7 @@
 package service;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import dataaccess.*;
 import model.UserData;
 import service.requests.LoginRequest;
@@ -36,7 +38,7 @@ public class UserService {
 
         UserData user = userDAO.getUser(request.username());
         
-        if (!user.password().equals(request.password())) {
+        if (!BCrypt.checkpw(request.password(), user.password())) {
             throw new DataAccessException("Error: unauthorized");
         }
         
