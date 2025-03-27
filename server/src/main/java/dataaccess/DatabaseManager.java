@@ -11,8 +11,10 @@ public class DatabaseManager {
 
     static {
         try {
+            // Load database properties
             try (var propStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties")) {
                 if (propStream == null) {
+                    System.err.println("ERROR: db.properties file not found!");
                     throw new Exception("Unable to load db.properties");
                 }
                 Properties props = new Properties();
@@ -24,8 +26,15 @@ public class DatabaseManager {
                 var host = props.getProperty("db.host");
                 var port = Integer.parseInt(props.getProperty("db.port"));
                 CONNECTION_URL = String.format("jdbc:mysql://%s:%d", host, port);
+                
+                System.out.println("Database configuration loaded:");
+                System.out.println("URL: " + CONNECTION_URL);
+                System.out.println("Database: " + DATABASE_NAME);
+                System.out.println("User: " + USER);
             }
         } catch (Exception ex) {
+            System.err.println("CRITICAL ERROR: Unable to process db.properties: " + ex.getMessage());
+            ex.printStackTrace();
             throw new RuntimeException("unable to process db.properties. " + ex.getMessage());
         }
     }
@@ -122,5 +131,16 @@ public class DatabaseManager {
         }
         System.out.println("Total row count: " + count);
         return count;
+    }
+
+    public static boolean testConnection() {
+        try (Connection conn = getConnection()) {
+            System.out.println("Database connection test SUCCESSFUL");
+            return true;
+        } catch (Exception e) {
+            System.err.println("Database connection test FAILED: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

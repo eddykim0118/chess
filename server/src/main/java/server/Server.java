@@ -30,13 +30,14 @@ public class Server {
             AuthDAO authDAO;
             
             if (usePersistence) {
-                // Use MySQL implementations (with exact class names)
+                System.out.println("==== CREATING MYSQL IMPLEMENTATIONS ====");
+                DatabaseManager.testConnection(); // Test connection first
                 userDAO = new MySQLUserDAO();
                 gameDAO = new MySQLGameDAO();
                 authDAO = new MySQLAuthDAO();
-                System.out.println("Using MySQL persistence");
+                System.out.println("MySQL implementations created successfully");
             } else {
-                // Use memory implementations
+                System.out.println("==== CREATING MEMORY IMPLEMENTATIONS ====");
                 userDAO = new MemoryUserDAO();
                 gameDAO = new MemoryGameDAO();
                 authDAO = new MemoryAuthDAO();
