@@ -3,6 +3,7 @@ package passoff.server;
 import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import passoff.model.*;
+import server.PersistenceServer;
 import server.Server;
 
 import java.lang.reflect.Method;
@@ -23,7 +24,7 @@ public class DatabaseTests {
 
     @BeforeAll
     public static void startServer() {
-        server = new Server();
+        server = new PersistenceServer();
         var port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
 
