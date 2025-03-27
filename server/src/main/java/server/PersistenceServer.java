@@ -1,8 +1,5 @@
 package server;
 
-import dataaccess.*;
-import service.*;
-
 /**
  * A server implementation that uses MySQL database instead of memory
  * for persistent storage tests.
