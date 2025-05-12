@@ -8,6 +8,9 @@ public class KingMovesCalculator implements PieceMovesCalculator {
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition position, ChessPiece piece) {
         Collection<ChessMove> moves = new ArrayList<>();
 
+        int row = position.getRow();
+        int col = position.getColumn();
+
         int[][] kingDirections = {
                 {-1, -1}, {-1, 0}, {-1, 1},
                 {0, -1},          {0, 1},
