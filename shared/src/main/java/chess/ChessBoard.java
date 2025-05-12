@@ -71,41 +71,6 @@ public class ChessBoard {
         addPiece(new ChessPosition(1, 8), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.ROOK));
     }
 
-    private void setPositionFromFEN(String fen) {
-        squares = new ChessPiece[8][8];
-        String[] parts = fen.split(" ");
-        String boardPart = parts[0];
-        String[] rows = boardPart.split("/");
-        
-        for (int row = 0; row < 8; row++) {
-            int col = 0;
-            for (int i = 0; i < rows[row].length(); i++) {
-                char c = rows[row].charAt(i);
-                if (Character.isDigit(c)) {
-                    col += Character.getNumericValue(c);
-                } else {
-                    ChessGame.TeamColor color = Character.isUpperCase(c) ? 
-                        ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
-                    ChessPiece.PieceType type = getPieceTypeFromChar(c);
-                    addPiece(new ChessPosition(8-row, col+1), new ChessPiece(color, type));
-                    col++;
-                }
-            }
-        }
-    }
-
-    private ChessPiece.PieceType getPieceTypeFromChar(char c) {
-        switch (Character.toLowerCase(c)) {
-            case 'k': return ChessPiece.PieceType.KING;
-            case 'q': return ChessPiece.PieceType.QUEEN;
-            case 'r': return ChessPiece.PieceType.ROOK;
-            case 'b': return ChessPiece.PieceType.BISHOP;
-            case 'n': return ChessPiece.PieceType.KNIGHT;
-            case 'p': return ChessPiece.PieceType.PAWN;
-            default: throw new IllegalArgumentException("Unknown piece: " + c);
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
