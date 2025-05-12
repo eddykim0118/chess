@@ -48,7 +48,6 @@ public class ChessMove {
         
         ChessMove otherMove = (ChessMove) o;
         
-        // Compare start position, end position, and promotion piece type
         if (!startPosition.equals(otherMove.startPosition)) return false;
         if (!endPosition.equals(otherMove.endPosition)) return false;
         return promotionPiece == otherMove.promotionPiece;

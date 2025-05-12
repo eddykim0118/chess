@@ -15,37 +15,29 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         int col = position.getColumn();
         ChessGame.TeamColor color = piece.getTeamColor();
 
-        // Determine direction based on team color
         int direction = (color == ChessGame.TeamColor.WHITE) ? 1 : -1;
 
-        // Forward move (1 square)
         addForwardMove(board, position, piece, direction, 1, moves);
 
-        // Forward move (2 squares) from starting position
         if ((color == ChessGame.TeamColor.WHITE && row == 2) ||
                 (color == ChessGame.TeamColor.BLACK && row == 7)) {
-            // Check if the square directly in front is empty first
             ChessPosition singleMovePos = new ChessPosition(row + direction, col);
             if (board.getPiece(singleMovePos) == null) {
-                // Now check the two-square move
                 addForwardMove(board, position, piece, direction, 2, moves);
             }
         }
 
-        // Diagonal captures
         addDiagonalCaptures(board, position, piece, direction, moves);
 
         return moves;
     }
 
-    // Helper method to add forward moves
     private void addForwardMove(ChessBoard board, ChessPosition start, ChessPiece piece,
                                 int direction, int squares, Collection<ChessMove> moves) {
         int row = start.getRow();
         int col = start.getColumn();
         int newRow = row + (direction * squares);
 
-        // Check if new position is on the board
         if (newRow < 1 || newRow > 8) {
             return;
         }
@@ -53,14 +45,10 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         ChessPosition newPosition = new ChessPosition(newRow, col);
         ChessPiece pieceAtNewPosition = board.getPiece(newPosition);
 
-        // Forward moves are only valid if the square is empty
         if (pieceAtNewPosition == null) {
-            // Check if pawn reaches the end of the board (promotion)
             if (newRow == 1 || newRow == 8) {
-                // Add moves for all possible promotion pieces
                 addPromotionMoves(start, newPosition, moves);
             } else {
-                // Normal move
                 moves.add(new ChessMove(start, newPosition, null));
             }
         }

@@ -38,9 +38,8 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        squares = new ChessPiece[8][8]; // Clear the board
+        squares = new ChessPiece[8][8]; 
 
-        // Place black pieces on the top row (row 8)
         addPiece(new ChessPosition(8, 1), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.ROOK));
         addPiece(new ChessPosition(8, 2), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(8, 3), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.BISHOP));
@@ -50,17 +49,14 @@ public class ChessBoard {
         addPiece(new ChessPosition(8, 7), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(8, 8), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.ROOK));
 
-        // Place black pawns on row 7
         for (int col = 1; col <= 8; col++) {
             addPiece(new ChessPosition(7, col), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.PAWN));
         }
 
-        // Place white pawns on row 2
         for (int col = 1; col <= 8; col++) {
             addPiece(new ChessPosition(2, col), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN));
         }
 
-        // Place white pieces on the bottom row (row 1)
         addPiece(new ChessPosition(1, 1), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.ROOK));
         addPiece(new ChessPosition(1, 2), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(1, 3), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.BISHOP));
@@ -78,7 +74,6 @@ public class ChessBoard {
         
         ChessBoard that = (ChessBoard) o;
         
-        // Compare each position on the board
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
@@ -86,15 +81,15 @@ public class ChessBoard {
                 ChessPiece thatPiece = that.getPiece(position);
                 
                 if (thisPiece == null && thatPiece == null) {
-                    continue; // Both positions empty, continue checking
+                    continue; 
                 }
                 
                 if (thisPiece == null || thatPiece == null || !thisPiece.equals(thatPiece)) {
-                    return false; // Pieces differ
+                    return false; 
                 }
             }
         }
-        return true; // All positions match
+        return true; 
     }
 
     @Override
