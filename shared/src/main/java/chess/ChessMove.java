@@ -40,4 +40,25 @@ public class ChessMove {
     public ChessPiece.PieceType getPromotionPiece() {
         return promotionPiece;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        ChessMove otherMove = (ChessMove) o;
+        
+        // Compare start position, end position, and promotion piece type
+        if (!startPosition.equals(otherMove.startPosition)) return false;
+        if (!endPosition.equals(otherMove.endPosition)) return false;
+        return promotionPiece == otherMove.promotionPiece;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = startPosition.hashCode();
+        result = 31 * result + endPosition.hashCode();
+        result = 31 * result + (promotionPiece != null ? promotionPiece.hashCode() : 0);
+        return result;
+    }
 }
