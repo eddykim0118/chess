@@ -8,26 +8,14 @@ import java.util.Collection;
  */
 public class PawnMovesCalculator implements PieceMovesCalculator {
     @Override
-    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition position, ChessPiece piece) {
-        Collection<ChessMove> moves = new ArrayList<>();
+    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition position, ChessPiece piece, ChessMove lastMove) {
+        // Get regular moves first
+        Collection<ChessMove> moves = pieceMoves(board, position, piece);
 
-        int row = position.getRow();
-        int col = position.getColumn();
-        ChessGame.TeamColor color = piece.getTeamColor();
-
-        int direction = (color == ChessGame.TeamColor.WHITE) ? 1 : -1;
-
-        addForwardMove(board, position, piece, direction, 1, moves);
-
-        if ((color == ChessGame.TeamColor.WHITE && row == 2) ||
-                (color == ChessGame.TeamColor.BLACK && row == 7)) {
-            ChessPosition singleMovePos = new ChessPosition(row + direction, col);
-            if (board.getPiece(singleMovePos) == null) {
-                addForwardMove(board, position, piece, direction, 2, moves);
-            }
+        // Now check for en passant
+        if (lastMove != null) {
+            addEnPassantMove(board, position, piece, lastMove, moves);
         }
-
-        addDiagonalCaptures(board, position, piece, direction, moves);
 
         return moves;
     }
@@ -106,5 +94,40 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         moves.add(new ChessMove(start, end, ChessPiece.PieceType.ROOK));
         moves.add(new ChessMove(start, end, ChessPiece.PieceType.BISHOP));
         moves.add(new ChessMove(start, end, ChessPiece.PieceType.KNIGHT));
+    }
+
+    private void addEnPassantMove(ChessBoard board, ChessPosition position, 
+                                  ChessPiece piece, ChessMove lastMove, Collection<ChessMove> moves) {
+        // Check if last move was a pawn double move
+        ChessPiece lastMovePiece = board.getPiece(lastMove.getEndPosition());
+        
+        if (lastMovePiece != null && 
+            lastMovePiece.getPieceType() == ChessPiece.PieceType.PAWN &&
+            lastMovePiece.getTeamColor() != piece.getTeamColor()) {
+            
+            int row = position.getRow();
+            int col = position.getColumn();
+            int lastMoveCol = lastMove.getEndPosition().getColumn();
+            
+            // Check if pieces are adjacent and on the same row
+            if (row == lastMove.getEndPosition().getRow() && 
+                Math.abs(col - lastMoveCol) == 1) {
+                
+                // Verify it was a double move (2 square jump)
+                int startRow = lastMove.getStartPosition().getRow();
+                int endRow = lastMove.getEndPosition().getRow();
+                
+                if (Math.abs(startRow - endRow) == 2) {
+                    // Direction based on color
+                    int direction = (piece.getTeamColor() == ChessGame.TeamColor.WHITE) ? 1 : -1;
+                    
+                    // Calculate the en passant capture position
+                    ChessPosition capturePos = new ChessPosition(row + direction, lastMoveCol);
+                    
+                    // Add the move
+                    moves.add(new ChessMove(position, capturePos, null));
+                }
+            }
+        }
     }
 }
