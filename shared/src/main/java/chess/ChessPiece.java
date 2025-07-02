@@ -163,7 +163,26 @@ public class ChessPiece {
     }
 
     private void addKnightMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        int row = myPosition.getRow();
+        int col = myPosition.getColumn();
 
+        // Knight moves in an "L" shape: 2 squares in one direction, 1 in perpendicular
+        int[][] knightMoves = {
+                {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
+                {1, 2}, {1, -2}, {-1, 2}, {-1, -2}
+        };
+
+        for (int[] move : knightMoves) {
+            int newRow = row + move[0];
+            int newCol = col + move[1];
+
+            if (isValidPosition(newRow, newCol)) {
+                ChessPosition newPos = new ChessPosition(newRow, newCol);
+                if (canMoveTo(board, newPos)) {
+                    moves.add(new ChessMove(myPosition, newPos));
+                }
+            }
+        }
     }
 
     private void addBishopMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
@@ -182,7 +201,29 @@ public class ChessPiece {
         addBishopMoves(moves, board, myPosition);
     }
 
-    private void addKingMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {}
+    private void addKingMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        int row = myPosition.getRow();
+        int col = myPosition.getColumn();
+
+        // King moves one square in any direction
+        for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
+            for (int colOffset = -1; colOffset <= 1; colOffset++) {
+                if (rowOffset == 0 && colOffset == 0) {
+                    continue; // Skip the current position
+                }
+
+                int newRow = row + rowOffset;
+                int newCol = col + colOffset;
+
+                if (isValidPosition(newRow, newCol)) {
+                    ChessPosition newPos = new ChessPosition(newRow, newCol);
+                    if (canMoveTo(board, newPos)) {
+                        moves.add(new ChessMove(myPosition, newPos));
+                    }
+                }
+            }
+        }
+    }
 
     private void addMovesInDirection(ArrayList<ChessMove moves, ChessBoard board, ChessPosition myPosition, int rowDir, int colDir) {
         int row = myPosition.getRow();
@@ -211,5 +252,23 @@ public class ChessPiece {
                 break;
             }
         }
+    }
+    @Override
+    public boolean equals(Object ob) {
+        if (this == ob) return true;
+        if (ob == null || getClass() != ob.getClass()) return false;
+
+        ChessPiece that = (ChessPiece) ob;
+        return pieceColor == that.pieceColor && type == that.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceColor, type);
+    }
+
+    @Override
+    public String toString() {
+        return pieceColor + " " + type;
     }
 }
