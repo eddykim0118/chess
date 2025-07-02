@@ -51,7 +51,7 @@ public class ChessMove {
         return promotionPiece;
     }
 
-    @xSupressWarnings("ReferenceEquality")
+    @SupressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object ob) {
         if (this == ob) return true;
@@ -66,7 +66,7 @@ public class ChessMove {
 
     @Override
     public int hashCode() {
-        return OBjects.hash(startPosition, endPosition, promotionPiece);
+        return Objects.hash(startPosition, endPosition, promotionPiece);
     }
 
     @Override
