@@ -81,7 +81,7 @@ public class ChessPiece {
         return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 
-    private boolean canMoveTo(ChessBaord board, ChessPosition position) {
+    private boolean canMoveTo(ChessBoard board, ChessPosition position) {
         ChessPiece pieceAtPosition = board.getPiece(position);
 
         if (pieceAtPosition == null) {
@@ -103,7 +103,7 @@ public class ChessPiece {
         int startingRow = (pieceColor == ChessGame.TeamColor.WHITE) ? 2 : 7;
         int promotionRow = (pieceColor == ChessGame.TeamColor.WHITE) ? 8 : 1;
 
-        int newRow = row + direciton;
+        int newRow = row + direction;
         if (isValidPosition(newRow, col)) {
             ChessPosition newPos = new ChessPosition(newRow, col);
             if (isEmpty(board, newPos)) {
@@ -132,7 +132,7 @@ public class ChessPiece {
             int newCol = col + colOffset;
             newRow = row + direction;
 
-            if (isValidPosition(newrow, newcol)) {
+            if (isValidPosition(newRow, newCol)) {
                 ChessPosition newPos = new ChessPosition(newRow, newCol);
                 ChessPiece targetPiece = board.getPiece(newPos);
 
