@@ -61,7 +61,8 @@ public class ChessBoard {
         setupBackRow(8, ChessGame.TeamColor.BLACK);
     }
 
-    private void setupBackRow(int row, ChessGame.TeamColor color) {addPiece(new ChessPosition(row, 1), new ChessPiece(color, ChessPiece.PieceType.ROOK));
+    private void setupBackRow(int row, ChessGame.TeamColor color) {
+        addPiece(new ChessPosition(row, 1), new ChessPiece(color, ChessPiece.PieceType.ROOK));
         addPiece(new ChessPosition(row, 2), new ChessPiece(color, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(row, 3), new ChessPiece(color, ChessPiece.PieceType.BISHOP));
         addPiece(new ChessPosition(row, 4), new ChessPiece(color, ChessPiece.PieceType.QUEEN));
