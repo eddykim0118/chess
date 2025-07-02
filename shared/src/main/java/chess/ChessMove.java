@@ -51,7 +51,7 @@ public class ChessMove {
         return promotionPiece;
     }
 
-    @SupressWarnings("ReferenceEquality")
+    @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object ob) {
         if (this == ob) return true;
