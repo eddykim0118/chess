@@ -225,7 +225,7 @@ public class ChessPiece {
         }
     }
 
-    private void addMovesInDirection(ArrayList<ChessMove moves, ChessBoard board, ChessPosition myPosition, int rowDir, int colDir) {
+    private void addMovesInDirection(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition, int rowDir, int colDir) {
         int row = myPosition.getRow();
         int col = myPosition.getColumn();
 
@@ -241,14 +241,11 @@ public class ChessPiece {
             ChessPiece pieceAtNewPos = board.getPiece(newPos);
 
             if (pieceAtNewPos == null) {
-                // Empty square - can move here and continue
                 moves.add(new ChessMove(myPosition, newPos));
             } else if (pieceAtNewPos.getTeamColor() != this.pieceColor) {
-                // Enemy piece - can capture but can't go further
                 moves.add(new ChessMove(myPosition, newPos));
                 break;
             } else {
-                // Friendly piece - can't move here or go further
                 break;
             }
         }
