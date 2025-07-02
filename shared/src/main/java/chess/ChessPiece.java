@@ -225,7 +225,7 @@ public class ChessPiece {
         }
     }
 
-    private void addMovesInDirection(ArrayList<ChessMove moves, ChessBoard board, ChessPosition myPosition, int rowDir, int colDir) {
+    private void addMovesInDirection(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition, int rowDir, int colDir) {
         int row = myPosition.getRow();
         int col = myPosition.getColumn();
 
@@ -253,6 +253,7 @@ public class ChessPiece {
             }
         }
     }
+
     @Override
     public boolean equals(Object ob) {
         if (this == ob) return true;
