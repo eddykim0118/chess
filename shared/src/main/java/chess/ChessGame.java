@@ -1,6 +1,8 @@
 package chess;
 
-import java.util.Collection;
+import java.util.*;
+import java.util.Objects;
+import chess.InvalidMoveException;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -72,7 +74,34 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        ChessPiece piece = gameBoard.getPiece(move.getStartPosition());
+
+        if (piece == null) {
+            throw new InvalidMoveException("No piece at starting position");
+        }
+
+        if (piece.getTeamColor() != currentTeam) {
+            throw new InvalidMoveException("Not your turn");
+        }
+
+        Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
+        if (validMoves == null || !validMoves.contains(move)) {
+            throw new InvalidMoveException("Invalid move");
+        }
+
+        // Execute the move
+        gameBoard.addPiece(move.getStartPosition(), null);
+
+        // Handle pawn promotion
+        if (move.getPromotionPiece() != null) {
+            ChessPiece promotedPiece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
+            gameBoard.addPiece(move.getEndPosition(), promotedPiece);
+        } else {
+            gameBoard.addPiece(move.getEndPosition(), piece);
+        }
+
+        // Switch turns
+        currentTeam = (currentTeam == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
     /**
