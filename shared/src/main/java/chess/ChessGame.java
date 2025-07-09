@@ -54,7 +54,15 @@ public class ChessGame {
             return null;
         }
 
+        Collection<ChessMove> pieceMove = piece.pieceMoves(gameBoard, startPosition);
+        Collection<ChessMove> validMove = new ArrayList<>();
 
+        for (ChessMove move : pieceMoves) {
+            if (!wouldLeaveKingInCheck(move, piece.getTeamColor())) {
+                validMoves.add(move);
+            }
+        }
+        return validMoves;
     }
 
     /**
@@ -114,5 +122,26 @@ public class ChessGame {
      */
     public ChessBoard getBoard() {
         throw new RuntimeException("Not implemented");
+    }
+
+    // Helper Functions
+    private boolean wouldLeaveKingInCheck(ChessMove move, TeamColor teamColor) {
+        ChessPiece originalPiece = gameBoard.getPiece(move.getStartPosition());
+        ChessPiece capturedPiece = gameBoard.getPiece(move.getEndPosition());
+
+        gameBoard.addPiece(move.getStartPosition(), null);
+        if (move.getPromotionPiece() != null) {
+            ChessPiece promotedPiece = new ChessPiece(teamColor, move.getPromotionPiece());
+            gameBoard.addPiece(move.getEndPosition(), promotedPiece);
+        } else {
+            gameBoard.addPiece(move.getEndPosition(), originalPiece);
+        }
+
+        boolean inCheck = isInCheck(teamColor);
+
+        gameBoard.addPiece(move.getStartPosition(), originalPiece);
+        gameBoard.addPiece(move.getEndPosition(), capturedPiece);
+
+        return inCheck;
     }
 }
