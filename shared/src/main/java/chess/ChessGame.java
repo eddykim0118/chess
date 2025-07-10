@@ -13,13 +13,6 @@ import chess.InvalidMoveException;
 public class ChessGame {
     private TeamColor currentTeam;
     private ChessBoard gameBoard;
-    private ChessMove lastMove; // Track last move for en passant
-    private boolean whiteKingMoved = false;
-    private boolean blackKingMoved = false;
-    private boolean whiteRookKingsideMoved = false;
-    private boolean whiteRookQueensideMoved = false;
-    private boolean blackRookKingsideMoved = false;
-    private boolean blackRookQueensideMoved = false;
 
     public ChessGame() {
         this.currentTeam = TeamColor.WHITE;
@@ -150,7 +143,7 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        if (isInCheck(teamColor)) {
+        if (!isInCheck(teamColor)) {
             return false;
         }
 
@@ -243,12 +236,6 @@ public class ChessGame {
         }
 
         return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(currentTeam, gameBoard, lastMove, whiteKingMoved, blackKingMoved,
-                whiteRookKingsideMoved, whiteRookQueensideMoved, blackRookKingsideMoved, blackRookQueensideMoved);
     }
 
     @Override
