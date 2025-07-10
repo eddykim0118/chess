@@ -56,8 +56,8 @@ public class ChessGame {
             return null;
         }
 
-        Collection<ChessMove> pieceMove = piece.pieceMoves(gameBoard, startPosition);
-        Collection<ChessMove> validMove = new ArrayList<>();
+        Collection<ChessMove> pieceMoves = piece.pieceMoves(gameBoard, startPosition);
+        Collection<ChessMove> validMoves = new ArrayList<>();
 
         for (ChessMove move : pieceMoves) {
             if (!wouldLeaveKingInCheck(move, piece.getTeamColor())) {
@@ -225,7 +225,7 @@ public class ChessGame {
                 ChessPiece piece = gameBoard.getPiece(position);
 
                 if (piece != null && piece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMvoes(position);
+                    Collection<ChessMove> moves = validMoves(position);
                     if (moves != null && !moves.isEmpty()) {
                         return false;
                     }
