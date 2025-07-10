@@ -73,14 +73,6 @@ public class ChessGame {
             }
         }
 
-        if (piece.getPieceType() == ChessPiece.PieceType.KING) {
-            addCastlingMoves(validMoves, startPosition, piece.getTeamColor());
-        }
-
-        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
-            addEnPassantMoves(validMoves, startPosition, piece.getTeamColor());
-        }
-
         return validMoves;
     }
 
@@ -251,65 +243,6 @@ public class ChessGame {
         }
 
         return true;
-    }
-
-    private void addCastlingMoves(Collection<ChessMove> moves, ChessPosition kingPos, TeamColor teamColor) {
-        if (isInCheck(teamColor)) {
-            return;
-        }
-
-        if (teamColor == TeamColor.WHITE && !whiteKingMoved) {
-            if (!whiteRookKingsideMoved && canCastle(kingPos, new ChessPosition(1, 8), true)) {
-                moves.add(new ChessMove(kingPos, new ChessPosition(1, 7)));
-            }
-            if (!whiteRookQueensideMoved && canCastle(kingPos, new ChessPosition(1, 1), false)) {
-                moves.add(new ChessMove(kingPos, new ChessPosition(1, 3)));
-            }
-        } else if (teamColor == TeamColor.BLACK && !blackKingMoved) {
-            if (!blackRookKingsideMoved && canCastle(kingPos, new ChessPosition(8, 8), true)) {
-                moves.add(new ChessMove(kingPos, new ChessPosition(8, 7)));
-            }
-            if (!blackRookQueensideMoved && canCastle(kingPos, new ChessPosition(8, 1), false)) {
-                moves.add(new ChessMove(kingPos, new ChessPosition(8, 3)));
-            }
-        }
-    }
-
-    private void addEnPassantMoves(Collection<ChessMove> moves, ChessPosition pawnPos, TeamColor teamColor) {
-        if (lastMove == null) {
-            return;
-        }
-
-        ChessPiece lastPiece = gameBoard.getPiece(lastMove.getEndPosition());
-        if (lastPiece == null || lastPiece.getPieceType() != ChessPiece.PieceType.PAWN) {
-            return;
-        }
-
-        if (Math.abs(lastMove.getEndPosition().getRow() - lastMove.getStartPosition().getRow()) != 2) {
-            return;
-        }
-
-        if (Math.abs(pawnPos.getColumn() - lastMove.getEndPosition().getColumn()) != 1) {
-            return;
-        }
-
-        if (pawnPos.getRow() != lastMove.getEndPosition().getRow()) {
-            return;
-        }
-
-        int direction = (teamColor == TeamColor.WHITE) ? 1 : -1;
-        int expectedRow = (teamColor == TeamColor.WHITE) ? 5 : 4;
-
-        if (pawnPos.getRow() != expectedRow) {
-            return;
-        }
-
-        ChessPosition enPassantPos = new ChessPosition(pawnPos.getRow() + direction, lastMove.getEndPosition().getColumn());
-        ChessMove enPassantMove = new ChessMove(pawnPos, enPassantPos);
-
-        if (!wouldLeaveKingInCheck(enPassantMove, teamColor)) {
-            moves.add(enPassantMove);
-        }
     }
 
     @Override
