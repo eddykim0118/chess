@@ -95,7 +95,7 @@ public class ChessPiece {
         return board.getPiece(position) == null;
     }
 
-    private void addPawnMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition){
+    private void addPawnMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
         int row = myPosition.getRow();
         int col = myPosition.getColumn();
 
@@ -103,19 +103,15 @@ public class ChessPiece {
         int startingRow = (pieceColor == ChessGame.TeamColor.WHITE) ? 2 : 7;
         int promotionRow = (pieceColor == ChessGame.TeamColor.WHITE) ? 8 : 1;
 
+        // Forward moves
         int newRow = row + direction;
         if (isValidPosition(newRow, col)) {
             ChessPosition newPos = new ChessPosition(newRow, col);
             if (isEmpty(board, newPos)) {
-                if (newRow == promotionRow) {
-                    moves.add(new ChessMove(myPosition, newPos, PieceType.QUEEN));
-                    moves.add(new ChessMove(myPosition, newPos, PieceType.ROOK));
-                    moves.add(new ChessMove(myPosition, newPos, PieceType.BISHOP));
-                    moves.add(new ChessMove(myPosition, newPos, PieceType.KNIGHT));
-                } else {
-                    moves.add(new ChessMove(myPosition, newPos));
-                }
+                // Add forward move (with promotion if needed)
+                addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
 
+                // Double move from starting position
                 if (row == startingRow) {
                     newRow = row + (2 * direction);
                     if (isValidPosition(newRow, col)) {
@@ -128,6 +124,7 @@ public class ChessPiece {
             }
         }
 
+        // Diagonal captures
         for (int colOffset : new int[] {-1, 1}) {
             int newCol = col + colOffset;
             newRow = row + direction;
@@ -137,17 +134,23 @@ public class ChessPiece {
                 ChessPiece targetPiece = board.getPiece(newPos);
 
                 if (targetPiece != null && targetPiece.getTeamColor() != this.pieceColor) {
-                    if (newRow == promotionRow) {
-                        moves.add(new ChessMove(myPosition, newPos, PieceType.QUEEN));
-                        moves.add(new ChessMove(myPosition, newPos, PieceType.ROOK));
-                        moves.add(new ChessMove(myPosition, newPos, PieceType.BISHOP));
-                        moves.add(new ChessMove(myPosition, newPos, PieceType.KNIGHT));
-                    } else {
-                        moves.add(new ChessMove(myPosition, newPos));
-                    }
-
+                    // Add capture move (with promotion if needed)
+                    addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
                 }
             }
+        }
+    }
+
+    // Helper method to avoid code duplication
+    private void addMoveWithPromotion(ArrayList<ChessMove> moves, ChessPosition start,
+                                      ChessPosition end, int newRow, int promotionRow) {
+        if (newRow == promotionRow) {
+            moves.add(new ChessMove(start, end, PieceType.QUEEN));
+            moves.add(new ChessMove(start, end, PieceType.ROOK));
+            moves.add(new ChessMove(start, end, PieceType.BISHOP));
+            moves.add(new ChessMove(start, end, PieceType.KNIGHT));
+        } else {
+            moves.add(new ChessMove(start, end));
         }
     }
 

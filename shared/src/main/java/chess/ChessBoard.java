@@ -40,7 +40,7 @@ public class ChessBoard {
         int row = position.getRow() - 1;
         int col = position.getColumn() - 1;
 
-        if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        if (row < 0 || row > 7 || col < 0 || col > 7) {
             return null;
         }
 
