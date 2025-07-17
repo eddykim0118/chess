@@ -4,14 +4,21 @@ import model.UserData;
 import model.GameData;
 import model.AuthData;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
-public class MemoryDataAccess implements DataAcess {
+/**
+ * In-memory implementation of DataAccess interface
+ * Stores all data in memory using Maps and other data structures
+ */
+public class MemoryDataAccess implements DataAccess {
+
+    // In-memory storage using Maps
     private final Map<String, UserData> users = new HashMap<>();
     private final Map<String, AuthData> authTokens = new HashMap<>();
-    private final Map<String, GameData> games = new HashMap<>();
+    private final Map<Integer, GameData> games = new HashMap<>();
 
+    // For generating unique game IDs
     private int nextGameID = 1;
 
     @Override
@@ -21,4 +28,5 @@ public class MemoryDataAccess implements DataAcess {
         games.clear();
         nextGameID = 1;
     }
+
 }
