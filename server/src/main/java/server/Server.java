@@ -6,6 +6,9 @@ import dataaccess.DataAccessException;
 import dataaccess.MemoryDataAccess;
 import service.ClearService;
 import spark.*;
+import spark.Request;
+import spark.Response;
+import spark.Spark;
 
 public class Server {
     private final DataAccess dataAccess;
@@ -77,4 +80,20 @@ public class Server {
     }
 
     private record ErrorResponse(String message) {}
+
+    public static void main(String[] args) {
+        Server server = new Server();
+        int port = server.run(8080);
+        System.out.println("Server started on port: " + port);
+        System.out.println("Test: curl -X DELETE http://localhost:" + port + "/db");
+        System.out.println("Press Ctrl+C to stop server");
+
+        // Keep server running until interrupted
+        try {
+            Thread.sleep(Long.MAX_VALUE);
+        } catch (InterruptedException e) {
+            System.out.println("Server stopping...");
+            server.stop();
+        }
+    }
 }
