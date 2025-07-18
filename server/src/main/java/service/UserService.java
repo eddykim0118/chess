@@ -13,40 +13,53 @@ public class UserService {
         this.dataAccess = dataAccess;
     }
 
-    public RegisterResult register(RegisterRequest registerRequest) throws ServiceException {
-        try {
-            if (registerRequest == null) {
-                throw new ServiceException("Bad request");
-            }
-
-            String username = registerRequest.username();
-            String password = registerRequest.password();
-            String email = registerRequest.email();
-
-            if (username == null || username.trim().isEmpty() ||
-                    password == null || password.trim().isEmpty() ||
-                    email == null || email.trim().isEmpty()) {
-                throw new ServiceException("Bad request");
-            }
-
-            UserData existingUser = dataAccess.getUser(username);
-            if (existingUser != null) {
-                throw new ServiceException("Already taken");
-            }
-
-            UserData newUser = new UserData(username, password, email);
-            dataAccess.createUser(newUser);
-
-            String authToken = UUID.randomUUID().toString();
-            AuthData auth = new AuthData(authToken, username);
-            dataAccess.createAuth(auth);
-
-            return new RegisterResult(username, authToken);
-        } catch (DataAccessException e) {
-            throw new ServiceException("Internal server error: " + e.getMessage());
+    public RegisterResult register(RegisterRequest registerRequest) throws DataAccessException {
+        if (registerRequest == null || registerRequest.username() == null ||
+                registerRequest.password() == null || registerRequest.email() == null) {
+            throw new DataAccessException("Error: bad request");
         }
+
+        if (dataAccess.getUser(registerRequest.username()) != null) {
+            throw new DataAccessException("Error: already taken");
+        }
+
+        UserData newUser = new UserData(registerRequest.username(), registerRequest.password(), registerRequest.email());
+        dataAccess.createUser(newUser);
+
+        String authToken = UUID.randomUUID().toString();
+        AuthData auth = new AuthData(authToken, registerRequest.username());
+        dataAccess.createAuth(auth);
+
+        return new RegisterResult(registerRequest.username(), authToken);
+    }
+
+    public LoginResult login(LoginRequest loginRequest) throws DataAccessException {
+        if (loginRequest == null || loginRequest.username() == null || loginRequest.password() == null) {
+            throw new DataAccessException("Error: bad request");
+        }
+
+        UserData user = dataAccess.getUser(loginRequest.username());
+        if (user == null || !user.getPassword().equals(loginRequest.password())) {
+            throw new DataAccessException("Error: unauthorized");
+        }
+
+        String authToken = UUID.randomUUID().toString();
+        AuthData auth = new AuthData(authToken, loginRequest.username());
+        dataAccess.createAuth(auth);
+
+        return new LoginResult(loginRequest.username(), authToken);
+    }
+
+    public void logout(String authToken) throws DataAccessException {
+        AuthData auth = dataAccess.getAuth(authToken);
+        if (auth == null) {
+            throw new DataAccessException("Error: unauthorized");
+        }
+        dataAccess.deleteAuth(authToken);
     }
 
     public record RegisterRequest(String username, String password, String email) {}
     public record RegisterResult(String username, String authToken) {}
+    public record LoginRequest(String username, String password) {}
+    public record LoginResult(String username, String authToken) {}
 }

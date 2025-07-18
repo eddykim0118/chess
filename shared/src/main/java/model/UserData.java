@@ -11,15 +11,15 @@ public class UserData {
         this.email = email;
     }
 
-    public String username() {
+    public String getUsername() {
         return username;
     }
 
-    public String password() {
+    public String getPassword() {
         return password;
     }
 
-    public String email() {
+    public String getEmail() {
         return email;
     }
 }

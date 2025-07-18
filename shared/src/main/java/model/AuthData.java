@@ -9,11 +9,11 @@ public class AuthData {
         this.username = username;
     }
 
-    public String authToken() {
+    public String getAuthToken() {
         return authToken;
     }
 
-    public String username() {
+    public String getUsername() {
         return username;
     }
 }

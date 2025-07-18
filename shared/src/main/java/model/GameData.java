@@ -17,9 +17,23 @@ public class GameData {
         this.game = game;
     }
 
-    public int gameID() { return gameID; }
-    public String whiteUsername() { return whiteUsername; }
-    public String blackUsername() { return blackUsername; }
-    public String gameName() { return gameName; }
-    public ChessGame game() { return game; }
+    public int getGameID() {
+        return gameID;
+    }
+
+    public String getWhiteUsername() {
+        return whiteUsername;
+    }
+
+    public String getBlackUsername() {
+        return blackUsername;
+    }
+
+    public String getGameName() {
+        return gameName;
+    }
+
+    public ChessGame getGame() {
+        return game;
+    }
 }
