@@ -240,8 +240,8 @@ public class ChessGame {
 
     @Override
     public boolean equals(Object ob) {
-        if (this == ob) return true;
-        if (ob == null || getClass() != ob.getClass()) return false;
+        if (this == ob) { return true; }
+        if (ob == null || getClass() != ob.getClass()) { return false; }
 
         ChessGame chessGame = (ChessGame) ob;
         return currentTeam == chessGame.currentTeam &&

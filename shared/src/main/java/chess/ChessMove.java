@@ -54,8 +54,8 @@ public class ChessMove {
     @SuppressWarnings("ReferenceEquality")
     @Override
     public boolean equals(Object ob) {
-        if (this == ob) return true;
-        if (ob == null || getClass() != ob.getClass()) return false;
+        if (this == ob) { return true; }
+        if (ob == null || getClass() != ob.getClass()) { return false; }
 
         ChessMove chessMove = (ChessMove) ob;
         return Objects.equals(startPosition, chessMove.startPosition) &&
