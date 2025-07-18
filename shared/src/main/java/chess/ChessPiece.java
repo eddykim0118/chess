@@ -104,39 +104,71 @@ public class ChessPiece {
         int promotionRow = (pieceColor == ChessGame.TeamColor.WHITE) ? 8 : 1;
 
         // Forward moves
-        int newRow = row + direction;
-        if (isValidPosition(newRow, col)) {
-            ChessPosition newPos = new ChessPosition(newRow, col);
-            if (isEmpty(board, newPos)) {
-                // Add forward move (with promotion if needed)
-                addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
-
-                // Double move from starting position
-                if (row == startingRow) {
-                    newRow = row + (2 * direction);
-                    if (isValidPosition(newRow, col)) {
-                        ChessPosition doublePos = new ChessPosition(newRow, col);
-                        if (isEmpty(board, doublePos)) {
-                            moves.add(new ChessMove(myPosition, doublePos));
-                        }
-                    }
-                }
-            }
-        }
+        addPawnForwardMoves(moves, board, myPosition, row, col, direction, startingRow, promotionRow);
 
         // Diagonal captures
+        addPawnCaptureMoves(moves, board, myPosition, row, col, direction, promotionRow);
+    }
+
+    /**
+     * Helper method to add pawn forward moves (reduces nesting in addPawnMoves)
+     */
+    private void addPawnForwardMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition,
+                                     int row, int col, int direction, int startingRow, int promotionRow) {
+        int newRow = row + direction;
+        if (!isValidPosition(newRow, col)) {
+            return;
+        }
+
+        ChessPosition newPos = new ChessPosition(newRow, col);
+        if (!isEmpty(board, newPos)) {
+            return;
+        }
+
+        // Add forward move (with promotion if needed)
+        addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
+
+        // Double move from starting position
+        if (row == startingRow) {
+            addPawnDoubleMove(moves, board, myPosition, newRow, col, direction);
+        }
+    }
+
+    /**
+     * Helper method to add pawn double move
+     */
+    private void addPawnDoubleMove(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition,
+                                   int currentRow, int col, int direction) {
+        int doubleRow = currentRow + direction;
+        if (!isValidPosition(doubleRow, col)) {
+            return;
+        }
+
+        ChessPosition doublePos = new ChessPosition(doubleRow, col);
+        if (isEmpty(board, doublePos)) {
+            moves.add(new ChessMove(myPosition, doublePos));
+        }
+    }
+
+    /**
+     * Helper method to add pawn capture moves
+     */
+    private void addPawnCaptureMoves(ArrayList<ChessMove> moves, ChessBoard board, ChessPosition myPosition,
+                                     int row, int col, int direction, int promotionRow) {
         for (int colOffset : new int[] {-1, 1}) {
             int newCol = col + colOffset;
-            newRow = row + direction;
+            int newRow = row + direction;
 
-            if (isValidPosition(newRow, newCol)) {
-                ChessPosition newPos = new ChessPosition(newRow, newCol);
-                ChessPiece targetPiece = board.getPiece(newPos);
+            if (!isValidPosition(newRow, newCol)) {
+                continue;
+            }
 
-                if (targetPiece != null && targetPiece.getTeamColor() != this.pieceColor) {
-                    // Add capture move (with promotion if needed)
-                    addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
-                }
+            ChessPosition newPos = new ChessPosition(newRow, newCol);
+            ChessPiece targetPiece = board.getPiece(newPos);
+
+            if (targetPiece != null && targetPiece.getTeamColor() != this.pieceColor) {
+                // Add capture move (with promotion if needed)
+                addMoveWithPromotion(moves, myPosition, newPos, newRow, promotionRow);
             }
         }
     }

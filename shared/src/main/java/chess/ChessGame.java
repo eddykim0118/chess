@@ -118,19 +118,39 @@ public class ChessGame {
 
         TeamColor oppositeTeam = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
+        // Extract nested logic into helper method to reduce nesting
+        return isKingUnderAttack(kingPosition, oppositeTeam);
+    }
+
+    /**
+     * Helper method to check if king is under attack by any opponent piece
+     */
+    private boolean isKingUnderAttack(ChessPosition kingPosition, TeamColor attackingTeam) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = gameBoard.getPiece(position);
 
-                if (piece != null && piece.getTeamColor() == oppositeTeam) {
-                    Collection<ChessMove> moves = piece.pieceMoves(gameBoard, position);
-                    for (ChessMove move : moves) {
-                        if (move.getEndPosition().equals(kingPosition)) { // ✅ Check if move attacks king
-                            return true;
-                        }
-                    }
+                if (piece == null || piece.getTeamColor() != attackingTeam) {
+                    continue;
                 }
+
+                if (canPieceAttackKing(piece, position, kingPosition)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Helper method to check if a specific piece can attack the king
+     */
+    private boolean canPieceAttackKing(ChessPiece piece, ChessPosition piecePosition, ChessPosition kingPosition) {
+        Collection<ChessMove> moves = piece.pieceMoves(gameBoard, piecePosition);
+        for (ChessMove move : moves) {
+            if (move.getEndPosition().equals(kingPosition)) {
+                return true;
             }
         }
         return false;
