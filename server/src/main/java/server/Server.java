@@ -52,11 +52,32 @@ public class Server {
         Spark.stop();
     }
 
+    private void setJsonResponse(Response res, int status) {
+        res.status(status);
+        res.type("application/json");
+    }
+
+    private Object handleError(Response res, DataAccessException e) {
+        res.type("application/json");
+
+        String message = e.getMessage();
+        if (message.contains("bad request")) {
+            res.status(400);
+        } else if (message.contains("unauthorized")) {
+            res.status(401);
+        } else if (message.contains("already taken")) {
+            res.status(403);
+        } else {
+            res.status(500);
+        }
+
+        return gson.toJson(new ErrorResponse(message));
+    }
+
     private Object clearHandler(Request req, Response res) {
         try {
             clearService.clear();
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return "{}";
         } catch (DataAccessException e) {
             res.status(500);
@@ -69,19 +90,10 @@ public class Server {
         try {
             UserService.RegisterRequest request = gson.fromJson(req.body(), UserService.RegisterRequest.class);
             UserService.RegisterResult result = userService.register(request);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return gson.toJson(result);
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("bad request")) {
-                res.status(400);
-            } else if (e.getMessage().contains("already taken")) {
-                res.status(403);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
@@ -89,19 +101,10 @@ public class Server {
         try {
             UserService.LoginRequest request = gson.fromJson(req.body(), UserService.LoginRequest.class);
             UserService.LoginResult result = userService.login(request);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return gson.toJson(result);
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("bad request")) {
-                res.status(400);
-            } else if (e.getMessage().contains("unauthorized")) {
-                res.status(401);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
@@ -109,17 +112,10 @@ public class Server {
         try {
             String authToken = req.headers("authorization");
             userService.logout(authToken);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return "{}";
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("unauthorized")) {
-                res.status(401);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
@@ -127,17 +123,10 @@ public class Server {
         try {
             String authToken = req.headers("authorization");
             GameService.ListGamesResult result = gameService.listGames(authToken);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return gson.toJson(result);
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("unauthorized")) {
-                res.status(401);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
@@ -146,19 +135,10 @@ public class Server {
             String authToken = req.headers("authorization");
             GameService.CreateGameRequest request = gson.fromJson(req.body(), GameService.CreateGameRequest.class);
             GameService.CreateGameResult result = gameService.createGame(request, authToken);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return gson.toJson(result);
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("bad request")) {
-                res.status(400);
-            } else if (e.getMessage().contains("unauthorized")) {
-                res.status(401);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
@@ -167,21 +147,10 @@ public class Server {
             String authToken = req.headers("authorization");
             GameService.JoinGameRequest request = gson.fromJson(req.body(), GameService.JoinGameRequest.class);
             gameService.joinGame(request, authToken);
-            res.status(200);
-            res.type("application/json");
+            setJsonResponse(res, 200);
             return "{}";
         } catch (DataAccessException e) {
-            res.type("application/json");
-            if (e.getMessage().contains("bad request")) {
-                res.status(400);
-            } else if (e.getMessage().contains("unauthorized")) {
-                res.status(401);
-            } else if (e.getMessage().contains("already taken")) {
-                res.status(403);
-            } else {
-                res.status(500);
-            }
-            return gson.toJson(new ErrorResponse(e.getMessage()));
+            return handleError(res, e);
         }
     }
 
