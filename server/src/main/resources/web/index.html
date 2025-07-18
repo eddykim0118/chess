@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Server</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+<div class="container">
+    <h1>Chess Server</h1>
+    <div class="endpoint-section">
+        <h2>Test Endpoints</h2>
+        <div class="endpoint">
+            <h3>Clear Database</h3>
+            <button onclick="clearDB()">Clear DB</button>
+        </div>
+        <div class="endpoint">
+            <h3>Register User</h3>
+            <input type="text" id="regUsername" placeholder="Username">
+            <input type="password" id="regPassword" placeholder="Password">
+            <input type="email" id="regEmail" placeholder="Email">
+            <button onclick="register()">Register</button>
+        </div>
+        <div class="endpoint">
+            <h3>Login</h3>
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+        <div class="endpoint">
+            <h3>Logout</h3>
+            <input type="text" id="authToken" placeholder="Auth Token">
+            <button onclick="logout()">Logout</button>
+        </div>
+        <div class="endpoint">
+            <h3>List Games</h3>
+            <button onclick="listGames()">List Games</button>
+        </div>
+        <div class="endpoint">
+            <h3>Create Game</h3>
+            <input type="text" id="gameName" placeholder="Game Name">
+            <button onclick="createGame()">Create Game</button>
+        </div>
+        <div class="endpoint">
+            <h3>Join Game</h3>
+            <input type="number" id="gameID" placeholder="Game ID">
+            <select id="playerColor">
+                <option value="WHITE">WHITE</option>
+                <option value="BLACK">BLACK</option>
+            </select>
+            <button onclick="joinGame()">Join Game</button>
+        </div>
+    </div>
+    <div class="response-section">
+        <h2>Response</h2>
+        <pre id="response"></pre>
+    </div>
+</div>
+<script src="index.js"></script>
+</body>
+</html>
