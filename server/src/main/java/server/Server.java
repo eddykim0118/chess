@@ -46,10 +46,6 @@ public class Server {
         Spark.exception(Exception.class, (exception, request, response) -> {
             response.status(500);
             response.type("application/json");
-            String errorMessage = exception.getMessage();
-            if (!errorMessage.toLowerCase().contains("error")) {
-                errorMessage = "Error: " + errorMessage;
-            }
             response.body(gson.toJson(new ErrorResponse("Error: " + exception.getMessage())));
         });
 
@@ -78,6 +74,10 @@ public class Server {
             res.status(403);
         } else {
             res.status(500);
+            // Ensure 500 errors always start with "Error:"
+            if (!message.toLowerCase().contains("error")) {
+                message = "Error: " + message;
+            }
         }
 
         return gson.toJson(new ErrorResponse(message));
