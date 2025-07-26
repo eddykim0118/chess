@@ -53,7 +53,6 @@ public class Server {
             response.body(gson.toJson(new ErrorResponse("Error: " + exception.getMessage())));
         });
 
-
         Spark.awaitInitialization();
         return Spark.port();
     }
