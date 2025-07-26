@@ -7,6 +7,53 @@ import java.util.Collection;
 
 public class MySqlDataAccess implements DataAccess {
 
+    public MySqlDataAccess() throws DataAccessException {
+        configureDatabase();
+    }
+
+    private void configureDatabase() throws DataAccessException {
+        DatabaseManager.createDatabase();
+        createTables();
+    }
+
+    private void createTables() throws DataAccessException {
+        var createUsersTable = """
+            CREATE TABLE IF NOT EXISTS users (
+                username VARCHAR(255) NOT NULL PRIMARY KEY,
+                password VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL
+            )""";
+
+        var createGamesTable = """
+            CREATE TABLE IF NOT EXISTS games (
+                gameID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                whiteUsername VARCHAR(255),
+                blackUsername VARCHAR(255),
+                gameName VARCHAR(255) NOT NULL,
+                gameState TEXT
+            )""";
+
+        var createAuthsTable = """
+            CREATE TABLE IF NOT EXISTS auths (
+                authToken VARCHAR(255) NOT NULL PRIMARY KEY,
+                username VARCHAR(255) NOT NULL
+            )""";
+
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(createUsersTable)) {
+                preparedStatement.executeUpdate();
+            }
+            try (var preparedStatement = conn.prepareStatement(createGamesTable)) {
+                preparedStatement.executeUpdate();
+            }
+            try (var preparedStatement = conn.prepareStatement(createAuthsTable)) {
+                preparedStatement.executeUpdate();
+            }
+        } catch (Exception ex) {
+            throw new DataAccessException("Unable to configure database", ex);
+        }
+    }
+
     @Override
     public void clear() throws DataAccessException {
         // TODO: Implement MySQL clear
