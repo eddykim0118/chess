@@ -131,17 +131,66 @@ public class MySqlDataAccess implements DataAccess {
     // Keep the other methods stubbed for now
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        throw new DataAccessException("Method not implemented yet");
+        if (auth == null) {
+            throw new DataAccessException("Auth cannot be null");
+        }
+
+        var statement = "INSERT INTO auths (authToken, username) VALUES (?, ?)";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.setString(1, auth.getAuthToken());
+                preparedStatement.setString(2, auth.getUsername());
+                preparedStatement.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            if (ex.getErrorCode() == 1062) { // MySQL duplicate entry error code
+                throw new DataAccessException("Error: auth token already exists");
+            }
+            throw new DataAccessException("Unable to create auth", ex);
+        }
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        throw new DataAccessException("Method not implemented yet");
+        if (authToken == null) {
+            throw new DataAccessException("Auth token cannot be null");
+        }
+
+        var statement = "SELECT authToken, username FROM auths WHERE authToken = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.setString(1, authToken);
+                try (var resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return new AuthData(
+                                resultSet.getString("authToken"),
+                                resultSet.getString("username")
+                        );
+                    }
+                    return null;
+                }
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("Unable to get auth", ex);
+        }
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        throw new DataAccessException("Method not implemented yet");
+        if (authToken == null) {
+            throw new DataAccessException("Auth token cannot be null");
+        }
+
+        var statement = "DELETE FROM auths WHERE authToken = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.setString(1, authToken);
+                preparedStatement.executeUpdate();
+                // Note: MySQL doesn't throw an error if no rows are deleted
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("Unable to delete auth", ex);
+        }
     }
 
     @Override
