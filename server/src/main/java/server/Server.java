@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.MemoryDataAccess;
+import dataaccess.MySqlDataAccess;
 import service.ClearService;
 import service.UserService;
 import service.GameService;
@@ -19,7 +20,11 @@ public class Server {
     private final Gson gson;
 
     public Server() {
-        this.dataAccess = new MemoryDataAccess();
+        try {
+            this.dataAccess = new MySqlDataAccess();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to initialize database", e);
+        }
         this.clearService = new ClearService(dataAccess);
         this.userService = new UserService(dataAccess);
         this.gameService = new GameService(dataAccess);

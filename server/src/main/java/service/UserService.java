@@ -39,7 +39,21 @@ public class UserService {
         }
 
         UserData user = dataAccess.getUser(loginRequest.username());
-        if (user == null || !user.getPassword().equals(loginRequest.password())) {
+        if (user == null) {
+            throw new DataAccessException("Error: unauthorized");
+        }
+
+        // Handle both BCrypt hashed passwords (MySQL) and plain text (Memory)
+        boolean passwordMatches;
+        if (user.getPassword().startsWith("$2a$") || user.getPassword().startsWith("$2b$")) {
+            // BCrypt hashed password
+            passwordMatches = org.mindrot.jbcrypt.BCrypt.checkpw(loginRequest.password(), user.getPassword());
+        } else {
+            // Plain text password (for backward compatibility)
+            passwordMatches = user.getPassword().equals(loginRequest.password());
+        }
+
+        if (!passwordMatches) {
             throw new DataAccessException("Error: unauthorized");
         }
 
