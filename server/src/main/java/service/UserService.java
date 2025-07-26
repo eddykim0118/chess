@@ -39,12 +39,7 @@ public class UserService {
         }
 
         UserData user = dataAccess.getUser(loginRequest.username());
-        if (user == null) {
-            throw new DataAccessException("Error: unauthorized");
-        }
-
-        // Use BCrypt to verify password instead of direct comparison
-        if (!org.mindrot.jbcrypt.BCrypt.checkpw(loginRequest.password(), user.getPassword())) {
+        if (user == null || !user.getPassword().equals(loginRequest.password())) {
             throw new DataAccessException("Error: unauthorized");
         }
 
