@@ -3,7 +3,9 @@ package dataaccess;
 import model.UserData;
 import model.AuthData;
 import model.GameData;
+import org.mindrot.jbcrypt.BCrypt;
 import java.util.Collection;
+import java.sql.SQLException;
 
 public class MySqlDataAccess implements DataAccess {
 
@@ -56,61 +58,109 @@ public class MySqlDataAccess implements DataAccess {
 
     @Override
     public void clear() throws DataAccessException {
-        // TODO: Implement MySQL clear
-        throw new DataAccessException("Method not implemented yet");
+        var clearUsers = "DELETE FROM users";
+        var clearGames = "DELETE FROM games";
+        var clearAuths = "DELETE FROM auths";
+
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(clearUsers)) {
+                preparedStatement.executeUpdate();
+            }
+            try (var preparedStatement = conn.prepareStatement(clearGames)) {
+                preparedStatement.executeUpdate();
+            }
+            try (var preparedStatement = conn.prepareStatement(clearAuths)) {
+                preparedStatement.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("Unable to clear database", ex);
+        }
     }
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        // TODO: Implement MySQL createUser
-        throw new DataAccessException("Method not implemented yet");
+        if (user == null) {
+            throw new DataAccessException("User cannot be null");
+        }
+
+        // Hash the password using BCrypt
+        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+
+        var statement = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.setString(1, user.getUsername());
+                preparedStatement.setString(2, hashedPassword);
+                preparedStatement.setString(3, user.getEmail());
+                preparedStatement.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            if (ex.getErrorCode() == 1062) { // MySQL duplicate entry error code
+                throw new DataAccessException("Error: already taken");
+            }
+            throw new DataAccessException("Unable to create user", ex);
+        }
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        // TODO: Implement MySQL getUser
-        throw new DataAccessException("Method not implemented yet");
+        if (username == null) {
+            throw new DataAccessException("Username cannot be null");
+        }
+
+        var statement = "SELECT username, password, email FROM users WHERE username = ?";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.setString(1, username);
+                try (var resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return new UserData(
+                                resultSet.getString("username"),
+                                resultSet.getString("password"),
+                                resultSet.getString("email")
+                        );
+                    }
+                    return null;
+                }
+            }
+        } catch (SQLException ex) {
+            throw new DataAccessException("Unable to get user", ex);
+        }
     }
 
+    // Keep the other methods stubbed for now
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
-        // TODO: Implement MySQL createAuth
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        // TODO: Implement MySQL getAuth
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        // TODO: Implement MySQL deleteAuth
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public int createGame(GameData game) throws DataAccessException {
-        // TODO: Implement MySQL createGame
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
-        // TODO: Implement MySQL getGame
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public Collection<GameData> listGames() throws DataAccessException {
-        // TODO: Implement MySQL listGames
         throw new DataAccessException("Method not implemented yet");
     }
 
     @Override
     public void updateGame(GameData game) throws DataAccessException {
-        // TODO: Implement MySQL updateGame
         throw new DataAccessException("Method not implemented yet");
     }
 }
