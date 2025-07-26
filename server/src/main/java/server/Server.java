@@ -46,6 +46,10 @@ public class Server {
         Spark.exception(Exception.class, (exception, request, response) -> {
             response.status(500);
             response.type("application/json");
+            String errorMessage = exception.getMessage();
+            if (!errorMessage.toLowerCase().contains("error")) {
+                errorMessage = "Error: " + errorMessage;
+            }
             response.body(gson.toJson(new ErrorResponse("Error: " + exception.getMessage())));
         });
 
