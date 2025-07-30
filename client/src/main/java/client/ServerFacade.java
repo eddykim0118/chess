@@ -21,20 +21,18 @@ public class ServerFacade {
         this.serverUrl = "http://localhost:" + port;
     }
 
-    // Authentication methods
     public AuthData register(String username, String password, String email) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        var request = new UserData(username, password, email);
+        return makeRequest("POST", "/user", request, AuthData.class, null);
     }
 
     public AuthData login(String username, String password) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        var request = new UserData(username, password, null);
+        return makeRequest("POST", "/session", request, AuthData.class, null);
     }
 
     public void logout(String authToken) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        makeRequest("DELETE", "/session", null, null, authToken);
     }
 
     // Game management methods
