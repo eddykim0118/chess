@@ -22,13 +22,15 @@ public class ServerFacade {
     }
 
     public AuthData register(String username, String password, String email) throws Exception {
-        var request = new UserData(username, password, email);
-        return makeRequest("POST", "/user", request, AuthData.class, null);
+        var request = new RegisterRequest(username, password, email);
+        var result = makeRequest("POST", "/user", request, RegisterResult.class, null);
+        return new AuthData(result.authToken(), result.username());
     }
 
     public AuthData login(String username, String password) throws Exception {
-        var request = new UserData(username, password, null);
-        return makeRequest("POST", "/session", request, AuthData.class, null);
+        var request = new LoginRequest(username, password);
+        var result = makeRequest("POST", "/session", request, LoginResult.class, null);
+        return new AuthData(result.authToken(), result.username());
     }
 
     public void logout(String authToken) throws Exception {
@@ -37,20 +39,21 @@ public class ServerFacade {
 
     // Game management methods
     public GameData createGame(String authToken, String gameName) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        var request = new CreateGameRequest(gameName);
+        var result = makeRequest("POST", "/game", request, CreateGameResult.class, authToken);
+        // Note: Server only returns gameID, we'll need to get full game data separately if needed
+        return new GameData(result.gameID(), null, null, gameName, null);
     }
 
     public GameData[] listGames(String authToken) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        var result = makeRequest("GET", "/game", null, ListGamesResult.class, authToken);
+        return result.games();
     }
 
     public void joinGame(String authToken, int gameId, String playerColor) throws Exception {
-        // Implementation will come in next commit
-        throw new UnsupportedOperationException("Not implemented yet");
+        var request = new JoinGameRequest(playerColor, gameId);
+        makeRequest("PUT", "/game", request, null, authToken);
     }
-
     // Helper method for making HTTP requests
     private <T> T makeRequest(String method, String path, Object request, Class<T> responseClass, String authToken) throws Exception {
         try {
@@ -100,4 +103,14 @@ public class ServerFacade {
     private static boolean isSuccessful(int status) {
         return status / 100 == 2;
     }
+
+    private record RegisterRequest(String username, String password, String email) {}
+    private record RegisterResult(String username, String authToken) {}
+    private record LoginRequest(String username, String password) {}
+    private record LoginResult(String username, String authToken) {}
+
+    private record CreateGameRequest(String gameName) {}
+    private record CreateGameResult(int gameID) {}
+    private record ListGamesResult(GameData[] games) {}
+    private record JoinGameRequest(String playerColor, int gameID) {}
 }
