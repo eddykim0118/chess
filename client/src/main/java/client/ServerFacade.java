@@ -98,6 +98,10 @@ public class ServerFacade {
         return status / 100 == 2;
     }
 
+    public void clear() throws Exception {
+        makeRequest("DELETE", "/db", null, null, null);
+    }
+
     private record RegisterRequest(String username, String password, String email) {}
     private record RegisterResult(String username, String authToken) {}
     private record LoginRequest(String username, String password) {}
