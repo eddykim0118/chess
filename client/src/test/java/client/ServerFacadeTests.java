@@ -88,6 +88,22 @@ public class ServerFacadeTests {
         Assertions.assertNotNull(exception.getMessage());
     }
 
+    @Test
+    void logoutPositiveTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+
+        Assertions.assertDoesNotThrow(() -> {
+            facade.logout(authData.getAuthToken());
+        });
+    }
+
+    @Test
+    void logoutNegativeTest() throws Exception {
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.logout("invalidAuthToken");
+        });
+        Assertions.assertNotNull(exception.getMessage());
+    }
 
     @Test
     public void sampleTest() {
