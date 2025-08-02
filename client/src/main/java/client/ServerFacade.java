@@ -111,4 +111,18 @@ public class ServerFacade {
     private record CreateGameResult(int gameID) {}
     private record ListGamesResult(GameData[] games) {}
     private record JoinGameRequest(String playerColor, int gameID) {}
+
+    private static void printColumnLabels(boolean reverse) {
+        System.out.print("    ");
+        if (reverse) {
+            for (char col = 'h'; col >= 'a'; col--) {
+                System.out.print(" " + col + "  ");
+            }
+        } else {
+            for (char col = 'a'; col <= 'h'; col++) {
+                System.out.print(" " + col + "  ");
+            }
+        }
+        System.out.println();
+    }
 }
