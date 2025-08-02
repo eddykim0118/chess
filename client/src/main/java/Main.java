@@ -315,36 +315,26 @@ public class Main {
 
     private static void drawBoardWhitePerspective(ChessBoard board) {
         System.out.println();
-
         printColumnLabels(false);
-
-        for (int row = 8; row >= 1; row--) {
-            System.out.print(" " + row + " ");
-
-            for (int col = 1; col <= 8; col++) {
-                boolean isLightSquare = (row + col) % 2 == 0;
-                ChessPosition position = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(position);
-
-                drawSquare(piece, isLightSquare);
-            }
-
-            System.out.println(" " + row);
-        }
-
+        drawBoardRows(board, 8, 1, -1, 1, 8, 1);
         printColumnLabels(false);
         System.out.println();
     }
 
     private static void drawBoardBlackPerspective(ChessBoard board) {
         System.out.println();
-
         printColumnLabels(true);
+        drawBoardRows(board, 1, 8, 1, 8, 1, -1);
+        printColumnLabels(true);
+        System.out.println();
+    }
 
-        for (int row = 1; row <= 8; row++) {
+    private static void drawBoardRows(ChessBoard board, int startRow, int endRow, int rowIncrement,
+                                      int startCol, int endCol, int colIncrement) {
+        for (int row = startRow; (rowIncrement > 0 ? row <= endRow : row >= endRow); row += rowIncrement) {
             System.out.print(" " + row + " ");
 
-            for (int col = 8; col >= 1; col--) {
+            for (int col = startCol; (colIncrement > 0 ? col <= endCol : col >= endCol); col += colIncrement) {
                 boolean isLightSquare = (row + col) % 2 == 0;
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(position);
@@ -354,9 +344,6 @@ public class Main {
 
             System.out.println(" " + row);
         }
-
-        printColumnLabels(true);
-        System.out.println();
     }
 
     private static void drawSquare(ChessPiece piece, boolean isLightSquare) {
