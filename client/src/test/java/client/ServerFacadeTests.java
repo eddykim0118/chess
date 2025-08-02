@@ -164,11 +164,25 @@ public class ServerFacadeTests {
         Assertions.assertNotNull(exception.getMessage());
     }
 
-
-
     @Test
-    public void sampleTest() {
-        Assertions.assertTrue(true);
+    void clearPositiveTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+        facade.createGame(authData.getAuthToken(), "Test Game");
+
+        Assertions.assertDoesNotThrow(() -> {
+            facade.clear();
+        });
+
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.listGames(authData.getAuthToken());
+        });
+        Assertions.assertNotNull(exception.getMessage());
     }
 
+    @Test
+    void clearNegativeTest() throws Exception {
+        Assertions.assertDoesNotThrow(() -> {
+            facade.clear();
+        });
+    }
 }
