@@ -143,6 +143,28 @@ public class ServerFacadeTests {
         Assertions.assertNotNull(exception.getMessage());
     }
 
+    @Test
+    void joinGamePositiveTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+        GameData gameData = facade.createGame(authData.getAuthToken(), "Test Game");
+
+        Assertions.assertDoesNotThrow(() -> {
+            facade.joinGame(authData.getAuthToken(), gameData.getGameID(), "WHITE");
+        });
+    }
+
+    @Test
+    void joinGameNegativeTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+        GameData gameData = facade.createGame(authData.getAuthToken(), "Test Game");
+
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.joinGame("invalidAuthToken", gameData.getGameID(), "WHITE");
+        });
+        Assertions.assertNotNull(exception.getMessage());
+    }
+
+
 
     @Test
     public void sampleTest() {
