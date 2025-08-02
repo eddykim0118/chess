@@ -7,7 +7,7 @@ import server.Server;
 public class ServerFacadeTests {
 
     private static Server server;
-    static ServerFade facade;
+    static ServerFacade facade;
 
     @BeforeAll
     public static void init() {

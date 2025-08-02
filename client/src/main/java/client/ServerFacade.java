@@ -41,7 +41,6 @@ public class ServerFacade {
     public GameData createGame(String authToken, String gameName) throws Exception {
         var request = new CreateGameRequest(gameName);
         var result = makeRequest("POST", "/game", request, CreateGameResult.class, authToken);
-        // Note: Server only returns gameID, we'll need to get full game data separately if needed
         return new GameData(result.gameID(), null, null, gameName, null);
     }
 
