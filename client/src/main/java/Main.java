@@ -12,9 +12,6 @@ public class Main {
     private static GameData[] lastGamesList = null;
 
     public static void main(String[] args) {
-//        var piece = new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN);
-//        System.out.println("♕ 240 Chess Client: " + piece);
-
         System.out.println("♕ 240 Chess Client Starting...");
 
         serverFacade = new ServerFacade(8080);
@@ -78,7 +75,6 @@ public class Main {
                         System.out.println("Usage: create <gameName>");
                         return;
                     }
-                    // Rejoin the game name (in case it has spaces)
                     String gameName = input.substring(input.toLowerCase().indexOf("create") + 6).trim();
                     createGame(gameName);
                 }
@@ -159,7 +155,6 @@ public class Main {
         System.out.print("Email: ");
         String email = scanner.nextLine().trim();
 
-        // Validate inputs
         if (username.isEmpty()) {
             System.out.println("Username cannot be empty");
             return;
@@ -208,7 +203,6 @@ public class Main {
             serverFacade.createGame(currentAuth.getAuthToken(), gameName);
             System.out.println("Game '" + gameName + "' created successfully");
         } catch (Exception e) {
-            // Clean up error messages - remove HTTP status codes and technical details
             String cleanMessage = cleanErrorMessage(e.getMessage());
             System.out.println("Failed to create game: " + cleanMessage);
         }
@@ -261,7 +255,6 @@ public class Main {
 
             System.out.println("Successfully joined game '" + selectedGame.getGameName() + "' as " + color);
 
-            // Draw the chessboard
             ChessBoard board = selectedGame.getGame().getBoard();
             boolean whiteOnBottom = color.equals("WHITE");
             drawChessBoard(board, whiteOnBottom);
@@ -289,7 +282,6 @@ public class Main {
 
             System.out.println("Now observing game '" + selectedGame.getGameName() + "'");
 
-            // Draw the chessboard from white's perspective
             ChessBoard board = selectedGame.getGame().getBoard();
             drawChessBoard(board, true);
 
@@ -310,22 +302,17 @@ public class Main {
     }
 
     private static void drawBoardWhitePerspective(ChessBoard board) {
-        // Draw from white's perspective (a1 in bottom-left)
         System.out.println();
 
-        // Top border with column labels
         System.out.print("    ");
         for (char col = 'a'; col <= 'h'; col++) {
             System.out.print(" " + col + "  ");
         }
         System.out.println();
 
-        // Draw rows from 8 to 1 (top to bottom)
         for (int row = 8; row >= 1; row--) {
-            // Row number on left
             System.out.print(" " + row + " ");
 
-            // Draw squares for this row
             for (int col = 1; col <= 8; col++) {
                 boolean isLightSquare = (row + col) % 2 == 0;
                 ChessPosition position = new ChessPosition(row, col);
@@ -334,11 +321,9 @@ public class Main {
                 drawSquare(piece, isLightSquare);
             }
 
-            // Row number on right
             System.out.println(" " + row);
         }
 
-        // Bottom border with column labels
         System.out.print("    ");
         for (char col = 'a'; col <= 'h'; col++) {
             System.out.print(" " + col + "  ");
@@ -348,22 +333,17 @@ public class Main {
     }
 
     private static void drawBoardBlackPerspective(ChessBoard board) {
-        // Draw from black's perspective (a1 in top-right)
         System.out.println();
 
-        // Top border with column labels (h to a)
         System.out.print("    ");
         for (char col = 'h'; col >= 'a'; col--) {
             System.out.print(" " + col + "  ");
         }
         System.out.println();
 
-        // Draw rows from 1 to 8 (top to bottom)
         for (int row = 1; row <= 8; row++) {
-            // Row number on left
             System.out.print(" " + row + " ");
 
-            // Draw squares for this row (h to a)
             for (int col = 8; col >= 1; col--) {
                 boolean isLightSquare = (row + col) % 2 == 0;
                 ChessPosition position = new ChessPosition(row, col);
@@ -372,11 +352,9 @@ public class Main {
                 drawSquare(piece, isLightSquare);
             }
 
-            // Row number on right
             System.out.println(" " + row);
         }
 
-        // Bottom border with column labels (h to a)
         System.out.print("    ");
         for (char col = 'h'; col >= 'a'; col--) {
             System.out.print(" " + col + "  ");
@@ -430,13 +408,9 @@ public class Main {
             return "Unknown error occurred";
         }
 
-        // Remove HTTP status codes
         errorMessage = errorMessage.replaceAll("HTTP request failed with status: \\d+", "Request failed");
-
-        // Remove technical HTTP details
         errorMessage = errorMessage.replaceAll("HTTP request failed: ", "");
 
-        // Extract meaningful error messages from server responses
         if (errorMessage.contains("already taken")) {
             return "Username is already taken";
         }
@@ -447,13 +421,10 @@ public class Main {
             return "Invalid input provided";
         }
 
-        // Remove "Error: " prefix if it exists (avoid double "Error: Error:")
         if (errorMessage.startsWith("Error: ")) {
             errorMessage = errorMessage.substring(7);
         }
 
         return errorMessage;
     }
-
-
 }

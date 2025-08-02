@@ -37,7 +37,6 @@ public class ServerFacade {
         makeRequest("DELETE", "/session", null, null, authToken);
     }
 
-    // Game management methods
     public GameData createGame(String authToken, String gameName) throws Exception {
         var request = new CreateGameRequest(gameName);
         var result = makeRequest("POST", "/game", request, CreateGameResult.class, authToken);
@@ -53,7 +52,6 @@ public class ServerFacade {
         var request = new JoinGameRequest(playerColor, gameId);
         makeRequest("PUT", "/game", request, null, authToken);
     }
-    // Helper method for making HTTP requests
     private <T> T makeRequest(String method, String path, Object request, Class<T> responseClass, String authToken) throws Exception {
         try {
             URL url = (new URI(serverUrl + path)).toURL();
@@ -61,12 +59,10 @@ public class ServerFacade {
             http.setRequestMethod(method);
             http.setDoOutput(true);
 
-            // Add auth header if provided
             if (authToken != null) {
                 http.addRequestProperty("Authorization", authToken);
             }
 
-            // Add request body if provided
             if (request != null) {
                 http.addRequestProperty("Content-Type", "application/json");
                 String reqData = gson.toJson(request);
@@ -78,7 +74,6 @@ public class ServerFacade {
             http.connect();
             throwIfNotSuccessful(http);
 
-            // Read response
             if (responseClass != null) {
                 try (InputStream respBody = http.getInputStream()) {
                     InputStreamReader reader = new InputStreamReader(respBody);

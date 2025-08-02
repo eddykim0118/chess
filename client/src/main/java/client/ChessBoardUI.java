@@ -17,22 +17,17 @@ public class ChessBoardUI {
     }
 
     private static void drawBoardWhitePerspective(ChessBoard board) {
-        // Draw from white's perspective (a1 in bottom-left)
         System.out.println();
-
-        // Top border with column labels
         System.out.print("    ");
+
         for (char col = 'a'; col <= 'h'; col++) {
             System.out.print(" " + col + "  ");
         }
         System.out.println();
 
-        // Draw rows from 8 to 1 (top to bottom)
         for (int row = 8; row >= 1; row--) {
-            // Row number on left
             System.out.print(" " + row + " ");
 
-            // Draw squares for this row
             for (int col = 1; col <= 8; col++) {
                 boolean isLightSquare = (row + col) % 2 == 0;
                 ChessPosition position = new ChessPosition(row, col);
@@ -40,12 +35,9 @@ public class ChessBoardUI {
 
                 drawSquare(piece, isLightSquare);
             }
-
-            // Row number on right
             System.out.println(" " + row);
         }
 
-        // Bottom border with column labels
         System.out.print("    ");
         for (char col = 'a'; col <= 'h'; col++) {
             System.out.print(" " + col + "  ");
@@ -55,22 +47,16 @@ public class ChessBoardUI {
     }
 
     private static void drawBoardBlackPerspective(ChessBoard board) {
-        // Draw from black's perspective (a1 in top-right)
         System.out.println();
-
-        // Top border with column labels (h to a)
         System.out.print("    ");
         for (char col = 'h'; col >= 'a'; col--) {
             System.out.print(" " + col + "  ");
         }
         System.out.println();
 
-        // Draw rows from 1 to 8 (top to bottom)
         for (int row = 1; row <= 8; row++) {
-            // Row number on left
             System.out.print(" " + row + " ");
 
-            // Draw squares for this row (h to a)
             for (int col = 8; col >= 1; col--) {
                 boolean isLightSquare = (row + col) % 2 == 0;
                 ChessPosition position = new ChessPosition(row, col);
@@ -78,12 +64,9 @@ public class ChessBoardUI {
 
                 drawSquare(piece, isLightSquare);
             }
-
-            // Row number on right
             System.out.println(" " + row);
         }
 
-        // Bottom border with column labels (h to a)
         System.out.print("    ");
         for (char col = 'h'; col >= 'a'; col--) {
             System.out.print(" " + col + "  ");
