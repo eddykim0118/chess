@@ -188,7 +188,6 @@ public class Main {
             currentAuth = null;
         } catch (Exception e) {
             System.out.println("Logout failed: " + e.getMessage());
-            // Even if logout fails, clear the local auth
             currentAuth = null;
         }
     }
@@ -267,7 +266,6 @@ public class Main {
         }
     }
 
-
     private static void observeGame(String gameNumStr) {
         try {
             int gameNum = Integer.parseInt(gameNumStr);
@@ -301,14 +299,24 @@ public class Main {
         }
     }
 
+    private static void printColumnLabels(boolean reverse) {
+        System.out.print("    ");
+        if (reverse) {
+            for (char col = 'h'; col >= 'a'; col--) {
+                System.out.print(" " + col + "  ");
+            }
+        } else {
+            for (char col = 'a'; col <= 'h'; col++) {
+                System.out.print(" " + col + "  ");
+            }
+        }
+        System.out.println();
+    }
+
     private static void drawBoardWhitePerspective(ChessBoard board) {
         System.out.println();
 
-        System.out.print("    ");
-        for (char col = 'a'; col <= 'h'; col++) {
-            System.out.print(" " + col + "  ");
-        }
-        System.out.println();
+        printColumnLabels(false);
 
         for (int row = 8; row >= 1; row--) {
             System.out.print(" " + row + " ");
@@ -324,22 +332,14 @@ public class Main {
             System.out.println(" " + row);
         }
 
-        System.out.print("    ");
-        for (char col = 'a'; col <= 'h'; col++) {
-            System.out.print(" " + col + "  ");
-        }
-        System.out.println();
+        printColumnLabels(false);
         System.out.println();
     }
 
     private static void drawBoardBlackPerspective(ChessBoard board) {
         System.out.println();
 
-        System.out.print("    ");
-        for (char col = 'h'; col >= 'a'; col--) {
-            System.out.print(" " + col + "  ");
-        }
-        System.out.println();
+        printColumnLabels(true);
 
         for (int row = 1; row <= 8; row++) {
             System.out.print(" " + row + " ");
@@ -355,11 +355,7 @@ public class Main {
             System.out.println(" " + row);
         }
 
-        System.out.print("    ");
-        for (char col = 'h'; col >= 'a'; col--) {
-            System.out.print(" " + col + "  ");
-        }
-        System.out.println();
+        printColumnLabels(true);
         System.out.println();
     }
 
