@@ -70,6 +70,26 @@ public class ServerFacadeTests {
     }
 
     @Test
+    void loginPositiveTest() throws Exception {
+        facade.register("testUser", "testPassword", "test@email.com");
+
+        AuthData authData = facade.login("testUser", "testPassword");
+        Assertions.assertNotNull(authData);
+        Assertions.assertNotNull(authData.getAuthToken());
+        Assertions.assertEquals("testUser", authData.getUsername());
+        Assertions.assertTrue(authData.getAuthToken().length() > 10);
+    }
+
+    @Test
+    void loginNegativeTest() throws Exception {
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.login("nonExistentUser", "password");
+        });
+        Assertions.assertNotNull(exception.getMessage());
+    }
+
+
+    @Test
     public void sampleTest() {
         Assertions.assertTrue(true);
     }
