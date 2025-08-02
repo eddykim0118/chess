@@ -123,6 +123,26 @@ public class ServerFacadeTests {
         Assertions.assertNotNull(exception.getMessage());
     }
 
+    @Test
+    void listGamesPositiveTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+
+        facade.createGame(authData.getAuthToken(), "Game 1");
+        facade.createGame(authData.getAuthToken(), "Game 2");
+
+        GameData[] games = facade.listGames(authData.getAuthToken());
+        Assertions.assertNotNull(games);
+        Assertions.assertEquals(2, games.length);
+    }
+
+    @Test
+    void listGamesNegativeTest() throws Exception {
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.listGames("invalidAuthToken");
+        });
+        Assertions.assertNotNull(exception.getMessage());
+    }
+
 
     @Test
     public void sampleTest() {
