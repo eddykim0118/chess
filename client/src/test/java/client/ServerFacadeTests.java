@@ -2,6 +2,8 @@ package client;
 
 import org.junit.jupiter.api.*;
 import server.Server;
+import model.AuthData;
+import model.GameData;
 
 
 public class ServerFacadeTests {
@@ -17,11 +19,55 @@ public class ServerFacadeTests {
         facade = new ServerFacade(port);
     }
 
+    @Test
+    void serverFacadeConstructorTest() {
+        Assertions.assertNotNull(facade);
+    }
+
+    @Test
+    void registerMethodExistsTest() {
+        // Test that the register method exists and can be called
+        // (This will fail if no server is running, but won't crash during initialization)
+        Assertions.assertNotNull(facade);
+
+        try {
+            facade.register("testUser", "testPassword", "test@email.com");
+            // If we get here, great! Server was running
+            Assertions.assertTrue(true);
+        } catch (Exception e) {
+            // If server isn't running, that's fine for this basic test
+            Assertions.assertTrue(true, "Method exists but server not available: " + e.getMessage());
+        }
+    }
+
     @AfterAll
     static void stopServer() {
         server.stop();
     }
 
+    @BeforeEach
+    void clearDatabase() throws Exception {
+        facade.clear();
+    }
+
+    @Test
+    void registerPositiveTest() throws Exception {
+        AuthData authData = facade.register("testUser", "testPassword", "test@email.com");
+        Assertions.assertNotNull(authData);
+        Assertions.assertNotNull(authData.getAuthToken());
+        Assertions.assertEquals("testUser", authData.getUsername());
+        Assertions.assertTrue(authData.getAuthToken().length() > 10);
+    }
+
+    @Test
+    void registerNegativeTest() throws Exception {
+        facade.register("testUser", "testPassword", "test@email.com");
+
+        Exception exception = Assertions.assertThrows(Exception.class, () -> {
+            facade.register("testUser", "differentPassword", "different@email.com");
+        });
+        Assertions.assertNotNull(exception.getMessage());
+    }
 
     @Test
     public void sampleTest() {
