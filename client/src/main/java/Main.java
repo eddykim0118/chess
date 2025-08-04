@@ -276,6 +276,11 @@ public class Main {
             }
 
             GameData selectedGame = lastGamesList[gameNum - 1];
+
+//          debug
+            System.out.println("DEBUG: Attempting to observe game ID: " + selectedGame.getGameID());
+            System.out.println("DEBUG: Auth token: " + (currentAuth.getAuthToken() != null ? "present" : "null"));
+
             serverFacade.joinGame(currentAuth.getAuthToken(), selectedGame.getGameID(), null);
 
             System.out.println("Now observing game '" + selectedGame.getGameName() + "'");
@@ -286,6 +291,7 @@ public class Main {
         } catch (NumberFormatException e) {
             System.out.println("Invalid game number format. Please enter a number.");
         } catch (Exception e) {
+            System.out.println("DEBUG: Full error message: " + e.getMessage());
             String cleanMessage = cleanErrorMessage(e.getMessage());
             System.out.println("Failed to observe game: " + cleanMessage);
         }
@@ -300,14 +306,14 @@ public class Main {
     }
 
     private static void printColumnLabels(boolean reverse) {
-        System.out.print("    ");
+        System.out.print("   ");
         if (reverse) {
             for (char col = 'h'; col >= 'a'; col--) {
-                System.out.print(" " + col + "  ");
+                System.out.print(" " + col + " ");
             }
         } else {
             for (char col = 'a'; col <= 'h'; col++) {
-                System.out.print(" " + col + "  ");
+                System.out.print(" " + col + " ");
             }
         }
         System.out.println();
@@ -335,7 +341,7 @@ public class Main {
             System.out.print(" " + row + " ");
 
             for (int col = startCol; (colIncrement > 0 ? col <= endCol : col >= endCol); col += colIncrement) {
-                boolean isLightSquare = (row + col) % 2 == 0;
+                boolean isLightSquare = (row + col) % 2 == 1;
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(position);
 

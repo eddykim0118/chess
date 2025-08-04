@@ -3,7 +3,6 @@ package client;
 import com.google.gson.Gson;
 import model.AuthData;
 import model.GameData;
-import model.UserData;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +48,7 @@ public class ServerFacade {
     }
 
     public void joinGame(String authToken, int gameId, String playerColor) throws Exception {
+//        String colorToSend = (playerColor == null) ? "" : playerColor;
         var request = new JoinGameRequest(playerColor, gameId);
         makeRequest("PUT", "/game", request, null, authToken);
     }
