@@ -64,16 +64,19 @@ public class GameService {
                 throw new DataAccessException("Error: already taken");
             }
             updatedGame = new GameData(game.getGameID(), username, game.getBlackUsername(), game.getGameName(), game.getGame());
+            dataAccess.updateGame(updatedGame);
         } else if ("BLACK".equals(request.playerColor())) {
             if (game.getBlackUsername() != null) {
                 throw new DataAccessException("Error: already taken");
             }
             updatedGame = new GameData(game.getGameID(), game.getWhiteUsername(), username, game.getGameName(), game.getGame());
+            dataAccess.updateGame(updatedGame);
+        } else if (request.playerColor() == null || request.playerColor().isEmpty()) {
+            // Observer case - don't update the game, just allow the request to succeed
+            // No database update needed for observers
         } else {
             throw new DataAccessException("Error: bad request");
         }
-
-        dataAccess.updateGame(updatedGame);
     }
 
     public record ListGamesResult(Collection<GameData> games) {}
