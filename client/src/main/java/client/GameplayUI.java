@@ -74,21 +74,44 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
     private void showHelp() {
         System.out.println("\nAvailable commands:");
-        System.out.println("  help - Show this help message");
+        System.out.println("  help - Display this help information");
         System.out.println("  redraw - Redraw the chess board");
-        System.out.println("  leave - Leave the game");
+        System.out.println("  leave - Remove yourself from the game and return to main menu");
+
         if (!isObserver) {
-            System.out.println("  resign - Resign from the game");
-            System.out.println("  move - Make a move");
+            System.out.println("  move - Make a chess move (format: e2 e4)");
+            System.out.println("  resign - Forfeit the game");
         }
-        System.out.println("  highlight - Highlight legal moves for a piece");
+
+        System.out.println("  highlight - Show legal moves for a piece (format: e2)");
+        System.out.println("\nYou are playing as: " +
+                (isObserver ? "Observer" : playerColor.toString() + " player"));
     }
 
     private void redrawBoard() {
         if (currentGame != null) {
+            System.out.println("\nCurrent game state:");
             drawBoard(currentGame.getBoard());
+
+            // Show whose turn it is
+            ChessGame.TeamColor currentTurn = currentGame.getTeamTurn();
+            System.out.println("Current turn: " + currentTurn);
+
+            // Check for game status
+            if (currentGame.isInCheck(ChessGame.TeamColor.WHITE)) {
+                System.out.println("White is in check!");
+            }
+            if (currentGame.isInCheck(ChessGame.TeamColor.BLACK)) {
+                System.out.println("Black is in check!");
+            }
+            if (currentGame.isInCheckmate(currentTurn)) {
+                System.out.println("Checkmate! Game is over.");
+            }
+            if (currentGame.isInStalemate(currentTurn)) {
+                System.out.println("Stalemate! Game is over.");
+            }
         } else {
-            System.out.println("No game loaded yet.");
+            System.out.println("No game loaded yet. Waiting for game data...");
         }
     }
 
@@ -105,47 +128,62 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
     }
 
     private void drawBoardFromWhitePerspective(ChessBoard board) {
-        System.out.println("  a b c d e f g h");
+        System.out.println("   a  b  c  d  e  f  g  h");
+        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
+
         for (int row = 8; row >= 1; row--) {
-            System.out.print(row + " ");
+            System.out.print(row + " │");
             for (int col = 1; col <= 8; col++) {
                 ChessPiece piece = board.getPiece(new ChessPosition(row, col));
-                System.out.print(getPieceSymbol(piece) + " ");
+                System.out.print(getPieceSymbol(piece) + " │");
             }
-            System.out.println(row);
+            System.out.println(" " + row);
+
+            if (row > 1) {
+                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
+            }
         }
-        System.out.println("  a b c d e f g h");
+
+        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
+        System.out.println("   a  b  c  d  e  f  g  h");
     }
 
     private void drawBoardFromBlackPerspective(ChessBoard board) {
-        System.out.println("  h g f e d c b a");
+        System.out.println("   h  g  f  e  d  c  b  a");
+        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
+
         for (int row = 1; row <= 8; row++) {
-            System.out.print(row + " ");
+            System.out.print(row + " │");
             for (int col = 8; col >= 1; col--) {
                 ChessPiece piece = board.getPiece(new ChessPosition(row, col));
-                System.out.print(getPieceSymbol(piece) + " ");
+                System.out.print(getPieceSymbol(piece) + " │");
             }
-            System.out.println(row);
+            System.out.println(" " + row);
+
+            if (row < 8) {
+                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
+            }
         }
-        System.out.println("  h g f e d c b a");
+
+        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
+        System.out.println("   h  g  f  e  d  c  b  a");
     }
 
     private String getPieceSymbol(ChessPiece piece) {
         if (piece == null) {
-            return ".";
+            return " ";
         }
 
         String symbol = switch (piece.getPieceType()) {
-            case PAWN -> "P";
-            case ROOK -> "R";
-            case KNIGHT -> "N";
-            case BISHOP -> "B";
-            case QUEEN -> "Q";
-            case KING -> "K";
+            case PAWN -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♙" : "♟";
+            case ROOK -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♖" : "♜";
+            case KNIGHT -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♘" : "♞";
+            case BISHOP -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♗" : "♝";
+            case QUEEN -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♕" : "♛";
+            case KING -> piece.getTeamColor() == ChessGame.TeamColor.WHITE ? "♔" : "♚";
         };
 
-        return piece.getTeamColor() == ChessGame.TeamColor.WHITE ?
-                symbol.toUpperCase() : symbol.toLowerCase();
+        return symbol;
     }
 
     private void leaveGame() {
