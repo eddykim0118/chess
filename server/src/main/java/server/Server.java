@@ -1,5 +1,6 @@
 package server;
 
+import server.websocket.WebSocketHandler;
 import com.google.gson.Gson;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
@@ -11,6 +12,7 @@ import service.GameService;
 import spark.Request;
 import spark.Response;
 import spark.Spark;
+import static spark.Spark.webSocket;
 
 public class Server {
     private final DataAccess dataAccess;
@@ -34,6 +36,8 @@ public class Server {
     public int run(int desiredPort) {
         Spark.port(desiredPort);
         Spark.staticFiles.location("web");
+
+        webSocket("/ws", WebSocketHandler.class);
 
         Spark.delete("/db", this::clearHandler);
         Spark.post("/user", this::registerHandler);
