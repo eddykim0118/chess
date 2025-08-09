@@ -2,6 +2,7 @@ package server.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import chess.ChessPosition;
 import chess.InvalidMoveException;
 
 import com.google.gson.Gson;
@@ -33,6 +34,8 @@ public class WebSocketHandler {
     private static final ConcurrentHashMap<Integer, CopyOnWriteArraySet<Session>> gameSessions = new ConcurrentHashMap<>();
     // Track session to user info
     private static final ConcurrentHashMap<Session, SessionInfo> sessionInfo = new ConcurrentHashMap<>();
+    // Track resigned games
+    private static final ConcurrentHashMap<Integer, Boolean> resignedGames = new ConcurrentHashMap<>();
 
     // Static method to set DataAccess (called from Server)
     public static void setDataAccess(DataAccess da) {
@@ -111,6 +114,12 @@ public class WebSocketHandler {
 
     private void handleMakeMove(Session session, UserGameCommand command) {
         try {
+            // Check if game is resigned
+            if (resignedGames.getOrDefault(command.getGameID(), false)) {
+                sendError(session, "Error: Game is over due to resignation");
+                return;
+            }
+
             // Validate auth token and get username
             String username = dataAccess.getAuth(command.getAuthToken()).username();
 
@@ -211,32 +220,6 @@ public class WebSocketHandler {
         }
     }
 
-    private void broadcastToAll(Integer gameID, Object message) {
-        CopyOnWriteArraySet<Session> sessions = gameSessions.get(gameID);
-        if (sessions != null) {
-            for (Session session : sessions) {
-                sendMessage(session, message);
-            }
-        }
-    }
-
-    private String formatMove(ChessMove move, ChessGame.TeamColor playerColor) {
-        String startPos = positionToString(move.getStartPosition());
-        String endPos = positionToString(move.getEndPosition());
-        String result = startPos + " to " + endPos;
-
-        if (move.getPromotionPiece() != null) {
-            result += " (promoted to " + move.getPromotionPiece() + ")";
-        }
-
-        return result;
-    }
-
-    private String positionToString(ChessPosition position) {
-        char col = (char) ('a' + position.getColumn() - 1);
-        return "" + col + position.getRow();
-    }
-
     private void handleLeave(Session session, UserGameCommand command) {
         try {
             // Validate auth token and get username
@@ -268,7 +251,6 @@ public class WebSocketHandler {
             sessionInfo.remove(session);
 
             // Send notification to OTHER clients (not the leaving client)
-            String role = isPlayer ? "player" : "observer";
             NotificationMessage notification = new NotificationMessage(username + " left the game");
             broadcastToOthers(command.getGameID(), session, notification);
 
@@ -278,8 +260,84 @@ public class WebSocketHandler {
     }
 
     private void handleResign(Session session, UserGameCommand command) {
-        // TODO: Implement resign logic
-        System.out.println("Handling RESIGN command");
+        try {
+            // Validate auth token and get username
+            String username = dataAccess.getAuth(command.getAuthToken()).username();
+
+            // Get game data
+            GameData gameData = dataAccess.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: Game not found");
+                return;
+            }
+
+            // Check if game is already resigned
+            if (resignedGames.getOrDefault(command.getGameID(), false)) {
+                sendError(session, "Error: Game is already over");
+                return;
+            }
+
+            ChessGame game = gameData.game();
+
+            // Check if game is already over due to checkmate/stalemate
+            if (game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                    game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                    game.isInStalemate(ChessGame.TeamColor.WHITE) ||
+                    game.isInStalemate(ChessGame.TeamColor.BLACK)) {
+                sendError(session, "Error: Game is already over");
+                return;
+            }
+
+            // Verify player authorization (only players can resign, not observers)
+            boolean isWhitePlayer = username.equals(gameData.whiteUsername());
+            boolean isBlackPlayer = username.equals(gameData.blackUsername());
+
+            if (!isWhitePlayer && !isBlackPlayer) {
+                sendError(session, "Error: Observer cannot resign");
+                return;
+            }
+
+            // Mark game as resigned
+            resignedGames.put(command.getGameID(), true);
+
+            // Update game in database
+            GameData updatedGameData = new GameData(gameData.gameID(), gameData.whiteUsername(),
+                    gameData.blackUsername(), gameData.gameName(), game);
+            dataAccess.updateGame(updatedGameData);
+
+            // Send resignation notification to ALL clients
+            NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
+            broadcastToAll(command.getGameID(), resignNotification);
+
+        } catch (DataAccessException e) {
+            sendError(session, "Error: " + e.getMessage());
+        }
+    }
+
+    private void broadcastToAll(Integer gameID, Object message) {
+        CopyOnWriteArraySet<Session> sessions = gameSessions.get(gameID);
+        if (sessions != null) {
+            for (Session session : sessions) {
+                sendMessage(session, message);
+            }
+        }
+    }
+
+    private String formatMove(ChessMove move, ChessGame.TeamColor playerColor) {
+        String startPos = positionToString(move.getStartPosition());
+        String endPos = positionToString(move.getEndPosition());
+        String result = startPos + " to " + endPos;
+
+        if (move.getPromotionPiece() != null) {
+            result += " (promoted to " + move.getPromotionPiece() + ")";
+        }
+
+        return result;
+    }
+
+    private String positionToString(ChessPosition position) {
+        char col = (char) ('a' + position.getColumn() - 1);
+        return "" + col + position.getRow();
     }
 
     private void sendMessage(Session session, Object message) {
