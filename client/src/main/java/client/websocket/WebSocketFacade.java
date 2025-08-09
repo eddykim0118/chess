@@ -1,12 +1,14 @@
 package client.websocket;
 
 import chess.ChessGame;
+import chess.ChessMove;
 import com.google.gson.Gson;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
 import websocket.messages.NotificationMessage;
 import websocket.messages.ServerMessage;
+import websocket.commands.MakeMoveCommand;
 
 import javax.websocket.*;
 import java.io.IOException;
@@ -95,6 +97,15 @@ public class WebSocketFacade extends Endpoint {
             }
         } catch (Exception ex) {
             System.err.println("Error handling WebSocket message: " + ex.getMessage());
+        }
+    }
+
+    public void makeMove(String authToken, Integer gameID, ChessMove move) throws IOException {
+        try {
+            MakeMoveCommand moveCommand = new MakeMoveCommand(authToken, gameID, move);
+            this.session.getBasicRemote().sendText(gson.toJson(moveCommand));
+        } catch (IOException ex) {
+            throw new IOException("Failed to send move command: " + ex.getMessage());
         }
     }
 

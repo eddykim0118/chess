@@ -223,8 +223,90 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             return;
         }
 
-        System.out.println("Move functionality not yet implemented.");
-        // TODO: Implement move input and sending
+        if (currentGame == null) {
+            System.out.println("No game loaded.");
+            return;
+        }
+
+        // Check if it's the player's turn
+        if (currentGame.getTeamTurn() != playerColor) {
+            System.out.println("It's not your turn.");
+            return;
+        }
+
+        System.out.print("Enter your move (e.g., 'e2 e4' or 'e7 e8 Q' for promotion): ");
+        String moveInput = scanner.nextLine().trim();
+
+        try {
+            ChessMove move = parseMove(moveInput);
+            if (move == null) {
+                System.out.println("Invalid move format. Use format like 'e2 e4' or 'e7 e8 Q' for promotion.");
+                return;
+            }
+
+            webSocket.makeMove(authToken, gameID, move);
+
+        } catch (IOException e) {
+            System.out.println("Error sending move: " + e.getMessage());
+        }
+    }
+
+    private ChessMove parseMove(String input) {
+        String[] parts = input.split("\\s+");
+
+        if (parts.length < 2 || parts.length > 3) {
+            return null;
+        }
+
+        try {
+            ChessPosition start = parsePosition(parts[0]);
+            ChessPosition end = parsePosition(parts[1]);
+
+            if (start == null || end == null) {
+                return null;
+            }
+
+            ChessPiece.PieceType promotionPiece = null;
+            if (parts.length == 3) {
+                promotionPiece = parsePromotionPiece(parts[2]);
+                if (promotionPiece == null) {
+                    return null;
+                }
+            }
+
+            return new ChessMove(start, end, promotionPiece);
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private ChessPosition parsePosition(String pos) {
+        if (pos.length() != 2) {
+            return null;
+        }
+
+        char colChar = pos.charAt(0);
+        char rowChar = pos.charAt(1);
+
+        if (colChar < 'a' || colChar > 'h' || rowChar < '1' || rowChar > '8') {
+            return null;
+        }
+
+        int col = colChar - 'a' + 1; // a=1, b=2, ..., h=8
+        int row = rowChar - '1' + 1; // 1=1, 2=2, ..., 8=8
+
+        return new ChessPosition(row, col);
+    }
+
+    private ChessPiece.PieceType parsePromotionPiece(String piece) {
+        return switch (piece.toUpperCase()) {
+            case "Q" -> ChessPiece.PieceType.QUEEN;
+            case "R" -> ChessPiece.PieceType.ROOK;
+            case "B" -> ChessPiece.PieceType.BISHOP;
+            case "N" -> ChessPiece.PieceType.KNIGHT;
+            default -> null;
+        };
     }
 
     private void highlightMoves() {
