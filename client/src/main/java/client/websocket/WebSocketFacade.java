@@ -2,6 +2,8 @@ package client.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import client.EscapeSequences;
+
 import com.google.gson.Gson;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
@@ -79,24 +81,33 @@ public class WebSocketFacade extends Endpoint {
 
     private void handleMessage(String message) {
         try {
-            ServerMessage serverMessage = gson.fromJson(message, ServerMessage.class);
+            // First parse to get the message type
+            com.google.gson.JsonObject jsonObject = gson.fromJson(message, com.google.gson.JsonObject.class);
+            String messageType = jsonObject.get("serverMessageType").getAsString();
 
-            switch (serverMessage.getServerMessageType()) {
-                case LOAD_GAME -> {
-                    LoadGameMessage loadGameMessage = gson.fromJson(message, LoadGameMessage.class);
-                    notificationHandler.notify(loadGameMessage);
+            ServerMessage serverMessage;
+
+            switch (messageType) {
+                case "LOAD_GAME" -> {
+                    serverMessage = gson.fromJson(message, LoadGameMessage.class);
                 }
-                case ERROR -> {
-                    ErrorMessage errorMessage = gson.fromJson(message, ErrorMessage.class);
-                    notificationHandler.notify(errorMessage);
+                case "ERROR" -> {
+                    serverMessage = gson.fromJson(message, ErrorMessage.class);
                 }
-                case NOTIFICATION -> {
-                    NotificationMessage notificationMessage = gson.fromJson(message, NotificationMessage.class);
-                    notificationHandler.notify(notificationMessage);
+                case "NOTIFICATION" -> {
+                    serverMessage = gson.fromJson(message, NotificationMessage.class);
+                }
+                default -> {
+                    System.err.println("Unknown message type: " + messageType);
+                    return;
                 }
             }
+
+            notificationHandler.notify(serverMessage);
+
         } catch (Exception ex) {
             System.err.println("Error handling WebSocket message: " + ex.getMessage());
+            System.err.println("Message was: " + message);
         }
     }
 

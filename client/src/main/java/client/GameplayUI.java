@@ -320,18 +320,24 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             case LOAD_GAME -> {
                 LoadGameMessage loadMessage = (LoadGameMessage) message;
                 currentGame = (ChessGame) loadMessage.getGame();
-                System.out.println("\nGame updated:");
+                System.out.println("\n" + EscapeSequences.ERASE_LINE + "Game board updated:");
                 drawBoard(currentGame.getBoard());
+                System.out.print(">>> ");
             }
             case ERROR -> {
                 ErrorMessage errorMessage = (ErrorMessage) message;
-                System.out.println("\nError: " + errorMessage.getErrorMessage());
+                System.out.println("\n" + EscapeSequences.SET_TEXT_COLOR_RED +
+                        "ERROR: " + errorMessage.getErrorMessage() +
+                        EscapeSequences.RESET_TEXT_COLOR);
+                System.out.print(">>> ");
             }
             case NOTIFICATION -> {
                 NotificationMessage notification = (NotificationMessage) message;
-                System.out.println("\n" + notification.getMessage());
+                System.out.println("\n" + EscapeSequences.SET_TEXT_COLOR_BLUE +
+                        notification.getMessage() +
+                        EscapeSequences.RESET_TEXT_COLOR);
+                System.out.print(">>> ");
             }
         }
-        System.out.print(">>> ");
     }
 }
