@@ -12,18 +12,23 @@ import java.util.Scanner;
 
 public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
+    public interface GameplayCallback {
+        void onGameplayExit();
+    }
+
     private final Scanner scanner;
     private final String serverUrl;
     private final String authToken;
     private final String username;
     private final Integer gameID;
     private final ChessGame.TeamColor playerColor;
+    private final GameplayCallback callback;
     private WebSocketFacade webSocket;
     private ChessGame currentGame;
     private boolean isObserver;
 
     public GameplayUI(Scanner scanner, String serverUrl, String authToken, String username,
-                      Integer gameID, ChessGame.TeamColor playerColor) {
+                      Integer gameID, ChessGame.TeamColor playerColor, GameplayCallback callback) {
         this.scanner = scanner;
         this.serverUrl = serverUrl;
         this.authToken = authToken;
@@ -31,6 +36,13 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
         this.gameID = gameID;
         this.playerColor = playerColor;
         this.isObserver = (playerColor == null);
+        this.callback = callback;
+    }
+
+    // Keep the old constructor for backward compatibility
+    public GameplayUI(Scanner scanner, String serverUrl, String authToken, String username,
+                      Integer gameID, ChessGame.TeamColor playerColor) {
+        this(scanner, serverUrl, authToken, username, gameID, playerColor, null);
     }
 
     public void start() {
@@ -61,8 +73,15 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
                 case "help" -> showHelp();
                 case "redraw" -> redrawBoard();
                 case "leave" -> {
-                    running = false;
-                    leaveGame();
+                    System.out.print("Are you sure you want to leave the game? (yes/no): ");
+                    String confirmation = scanner.nextLine().trim().toLowerCase();
+
+                    if (confirmation.equals("yes") || confirmation.equals("y")) {
+                        running = false;
+                        leaveGame();
+                    } else {
+                        System.out.println("Cancelled leaving the game.");
+                    }
                 }
                 case "resign" -> resignGame();
                 case "move" -> makeMove();
@@ -188,11 +207,24 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
     private void leaveGame() {
         try {
+            System.out.println("Leaving game...");
             webSocket.leaveGame(authToken, gameID);
+
+            Thread.sleep(100);
             webSocket.close();
-            System.out.println("Left the game. Returning to main menu.");
+
+            System.out.println("Left the game successfully.");
+
+            if (callback != null) {
+                callback.onGameplayExit();
+            }
+
         } catch (IOException e) {
             System.out.println("Error leaving game: " + e.getMessage());
+            webSocket.close();
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted while leaving game.");
+            webSocket.close();
         }
     }
 

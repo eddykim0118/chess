@@ -238,8 +238,43 @@ public class WebSocketHandler {
     }
 
     private void handleLeave(Session session, UserGameCommand command) {
-        // TODO: Implement leave logic
-        System.out.println("Handling LEAVE command");
+        try {
+            // Validate auth token and get username
+            String username = dataAccess.getAuth(command.getAuthToken()).username();
+
+            // Get game data
+            GameData gameData = dataAccess.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: Game not found");
+                return;
+            }
+
+            // Determine if this is a player leaving (vs observer)
+            boolean isPlayer = username.equals(gameData.whiteUsername()) ||
+                    username.equals(gameData.blackUsername());
+
+            if (isPlayer) {
+                // Remove player from game
+                String newWhiteUsername = username.equals(gameData.whiteUsername()) ? null : gameData.whiteUsername();
+                String newBlackUsername = username.equals(gameData.blackUsername()) ? null : gameData.blackUsername();
+
+                GameData updatedGameData = new GameData(gameData.gameID(), newWhiteUsername,
+                        newBlackUsername, gameData.gameName(), gameData.game());
+                dataAccess.updateGame(updatedGameData);
+            }
+
+            // Remove session from tracking
+            gameSessions.get(command.getGameID()).remove(session);
+            sessionInfo.remove(session);
+
+            // Send notification to OTHER clients (not the leaving client)
+            String role = isPlayer ? "player" : "observer";
+            NotificationMessage notification = new NotificationMessage(username + " left the game");
+            broadcastToOthers(command.getGameID(), session, notification);
+
+        } catch (DataAccessException e) {
+            sendError(session, "Error: " + e.getMessage());
+        }
     }
 
     private void handleResign(Session session, UserGameCommand command) {
