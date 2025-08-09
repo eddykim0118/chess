@@ -1,6 +1,9 @@
 package server.websocket;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.InvalidMoveException;
+
 import com.google.gson.Gson;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
@@ -107,8 +110,131 @@ public class WebSocketHandler {
     }
 
     private void handleMakeMove(Session session, UserGameCommand command) {
-        // TODO: Implement make move logic
-        System.out.println("Handling MAKE_MOVE command");
+        try {
+            // Validate auth token and get username
+            String username = dataAccess.getAuth(command.getAuthToken()).username();
+
+            // Get game data
+            GameData gameData = dataAccess.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: Game not found");
+                return;
+            }
+
+            // Parse the move from the command - need to handle MakeMoveCommand
+            ChessMove move;
+            try {
+                // The command should be a MakeMoveCommand with the move field
+                String commandJson = gson.toJson(command);
+                com.google.gson.JsonObject jsonObject = gson.fromJson(commandJson, com.google.gson.JsonObject.class);
+                if (!jsonObject.has("move")) {
+                    sendError(session, "Error: Invalid move command");
+                    return;
+                }
+                move = gson.fromJson(jsonObject.get("move"), ChessMove.class);
+            } catch (Exception e) {
+                sendError(session, "Error: Invalid move format");
+                return;
+            }
+
+            ChessGame game = gameData.game();
+
+            // Check if game is over
+            if (game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                    game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                    game.isInStalemate(ChessGame.TeamColor.WHITE) ||
+                    game.isInStalemate(ChessGame.TeamColor.BLACK)) {
+                sendError(session, "Error: Game is over");
+                return;
+            }
+
+            // Verify player authorization
+            ChessGame.TeamColor playerColor = null;
+            if (username.equals(gameData.whiteUsername())) {
+                playerColor = ChessGame.TeamColor.WHITE;
+            } else if (username.equals(gameData.blackUsername())) {
+                playerColor = ChessGame.TeamColor.BLACK;
+            } else {
+                sendError(session, "Error: Observer cannot make moves");
+                return;
+            }
+
+            // Check if it's the player's turn
+            if (game.getTeamTurn() != playerColor) {
+                sendError(session, "Error: Not your turn");
+                return;
+            }
+
+            // Validate and make the move
+            try {
+                game.makeMove(move);
+            } catch (InvalidMoveException e) {
+                sendError(session, "Error: Invalid move - " + e.getMessage());
+                return;
+            }
+
+            // Update game in database
+            GameData updatedGameData = new GameData(gameData.gameID(), gameData.whiteUsername(),
+                    gameData.blackUsername(), gameData.gameName(), game);
+            dataAccess.updateGame(updatedGameData);
+
+            // Send LOAD_GAME to all clients
+            LoadGameMessage loadMessage = new LoadGameMessage(game);
+            broadcastToAll(command.getGameID(), loadMessage);
+
+            // Send move notification to other clients
+            String moveDescription = formatMove(move, playerColor);
+            NotificationMessage moveNotification = new NotificationMessage(username + " made move: " + moveDescription);
+            broadcastToOthers(command.getGameID(), session, moveNotification);
+
+            // Check for check/checkmate/stalemate and notify all clients
+            ChessGame.TeamColor oppositeColor = (playerColor == ChessGame.TeamColor.WHITE) ?
+                    ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(oppositeColor)) {
+                String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
+                        gameData.whiteUsername() : gameData.blackUsername();
+                NotificationMessage checkmateNotification = new NotificationMessage(opponentUsername + " is in checkmate");
+                broadcastToAll(command.getGameID(), checkmateNotification);
+            } else if (game.isInCheck(oppositeColor)) {
+                String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
+                        gameData.whiteUsername() : gameData.blackUsername();
+                NotificationMessage checkNotification = new NotificationMessage(opponentUsername + " is in check");
+                broadcastToAll(command.getGameID(), checkNotification);
+            } else if (game.isInStalemate(oppositeColor)) {
+                NotificationMessage stalemateNotification = new NotificationMessage("Game ended in stalemate");
+                broadcastToAll(command.getGameID(), stalemateNotification);
+            }
+
+        } catch (DataAccessException e) {
+            sendError(session, "Error: " + e.getMessage());
+        }
+    }
+
+    private void broadcastToAll(Integer gameID, Object message) {
+        CopyOnWriteArraySet<Session> sessions = gameSessions.get(gameID);
+        if (sessions != null) {
+            for (Session session : sessions) {
+                sendMessage(session, message);
+            }
+        }
+    }
+
+    private String formatMove(ChessMove move, ChessGame.TeamColor playerColor) {
+        String startPos = positionToString(move.getStartPosition());
+        String endPos = positionToString(move.getEndPosition());
+        String result = startPos + " to " + endPos;
+
+        if (move.getPromotionPiece() != null) {
+            result += " (promoted to " + move.getPromotionPiece() + ")";
+        }
+
+        return result;
+    }
+
+    private String positionToString(ChessPosition position) {
+        char col = (char) ('a' + position.getColumn() - 1);
+        return "" + col + position.getRow();
     }
 
     private void handleLeave(Session session, UserGameCommand command) {
