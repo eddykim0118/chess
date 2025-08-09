@@ -38,6 +38,7 @@ public class Server {
         Spark.staticFiles.location("web");
 
         webSocket("/ws", WebSocketHandler.class);
+        WebSocketHandler.setDataAccess(dataAccess);
 
         Spark.delete("/db", this::clearHandler);
         Spark.post("/user", this::registerHandler);
