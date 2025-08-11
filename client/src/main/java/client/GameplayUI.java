@@ -9,6 +9,9 @@ import websocket.messages.ServerMessage;
 
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.Collection;
+import java.util.Set;
+import java.util.HashSet;
 
 public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
@@ -342,8 +345,123 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
     }
 
     private void highlightMoves() {
-        System.out.println("Highlight moves functionality not yet implemented.");
-        // TODO: Implement highlighting legal moves
+        if (currentGame == null) {
+            System.out.println("No game loaded.");
+            return;
+        }
+
+        System.out.print("Enter the position of the piece to highlight (e.g., 'e2'): ");
+        String positionInput = scanner.nextLine().trim();
+
+        ChessPosition position = parsePosition(positionInput);
+        if (position == null) {
+            System.out.println("Invalid position format. Use format like 'e2'.");
+            return;
+        }
+
+        ChessPiece piece = currentGame.getBoard().getPiece(position);
+        if (piece == null) {
+            System.out.println("No piece at position " + positionInput);
+            return;
+        }
+
+        // Get valid moves for this piece
+        Collection<ChessMove> validMoves = currentGame.validMoves(position);
+
+        if (validMoves.isEmpty()) {
+            System.out.println("No legal moves available for piece at " + positionInput);
+            drawBoard(currentGame.getBoard());
+            return;
+        }
+
+        // Create set of positions to highlight
+        Set<ChessPosition> highlightPositions = new HashSet<>();
+        highlightPositions.add(position); // Highlight the piece's current position
+
+        // Add all end positions of valid moves
+        for (ChessMove move : validMoves) {
+            highlightPositions.add(move.getEndPosition());
+        }
+
+        System.out.println("\nHighlighting legal moves for " + piece.getPieceType() +
+                " at " + positionInput + ":");
+        drawBoardWithHighlights(currentGame.getBoard(), highlightPositions);
+
+        System.out.println("Found " + validMoves.size() + " legal moves.");
+    }
+
+    private void drawBoardWithHighlights(ChessBoard board, Set<ChessPosition> highlights) {
+        System.out.println();
+
+        if (playerColor == ChessGame.TeamColor.BLACK) {
+            drawBoardFromBlackPerspectiveWithHighlights(board, highlights);
+        } else {
+            drawBoardFromWhitePerspectiveWithHighlights(board, highlights);
+        }
+    }
+
+    private void drawBoardFromWhitePerspectiveWithHighlights(ChessBoard board, Set<ChessPosition> highlights) {
+        System.out.println("   a  b  c  d  e  f  g  h");
+        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
+
+        for (int row = 8; row >= 1; row--) {
+            System.out.print(row + " │");
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(pos);
+
+                if (highlights.contains(pos)) {
+                    // Highlight this position
+                    System.out.print(EscapeSequences.SET_BG_COLOR_YELLOW +
+                            EscapeSequences.SET_TEXT_COLOR_BLACK +
+                            getPieceSymbol(piece) +
+                            EscapeSequences.RESET_BG_COLOR +
+                            EscapeSequences.RESET_TEXT_COLOR + " │");
+                } else {
+                    System.out.print(getPieceSymbol(piece) + " │");
+                }
+            }
+            System.out.println(" " + row);
+
+            if (row > 1) {
+                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
+            }
+        }
+
+        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
+        System.out.println("   a  b  c  d  e  f  g  h");
+    }
+
+    private void drawBoardFromBlackPerspectiveWithHighlights(ChessBoard board, Set<ChessPosition> highlights) {
+        System.out.println("   h  g  f  e  d  c  b  a");
+        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
+
+        for (int row = 1; row <= 8; row++) {
+            System.out.print(row + " │");
+            for (int col = 8; col >= 1; col--) {
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(pos);
+
+                if (highlights.contains(pos)) {
+                    // Highlight this position
+                    System.out.print(EscapeSequences.SET_BG_COLOR_YELLOW +
+                            EscapeSequences.SET_TEXT_COLOR_BLACK +
+                            getPieceSymbol(piece) +
+                            EscapeSequences.RESET_BG_COLOR +
+                            EscapeSequences.RESET_TEXT_COLOR + " │");
+                } else {
+                    System.out.print(getPieceSymbol(piece) + " │");
+                }
+            }
+            System.out.println(" " + row);
+
+            if (row < 8) {
+                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
+            }
+        }
+
+        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
+        System.out.println("   h  g  f  e  d  c  b  a");
     }
 
     @Override
