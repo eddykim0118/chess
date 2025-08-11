@@ -74,8 +74,25 @@ public class WebSocketHandler {
 
     private void handleConnect(Session session, UserGameCommand command) {
         try {
+            // Validate auth token exists
+            if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+
+            // Validate gameID exists
+            if (command.getGameID() == null) {
+                sendError(session, "Error: Invalid game ID");
+                return;
+            }
+
             // Validate auth token and get username
-            String username = dataAccess.getAuth(command.getAuthToken()).username();
+            var authData = dataAccess.getAuth(command.getAuthToken());
+            if (authData == null) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+            String username = authData.username();
 
             // Validate game exists
             GameData gameData = dataAccess.getGame(command.getGameID());
@@ -109,6 +126,8 @@ public class WebSocketHandler {
 
         } catch (DataAccessException e) {
             sendError(session, "Error: " + e.getMessage());
+        } catch (Exception e) {
+            sendError(session, "Error: " + e.getMessage());
         }
     }
 
@@ -119,9 +138,23 @@ public class WebSocketHandler {
                 sendError(session, "Error: Game is over due to resignation");
                 return;
             }
+            if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+            if (command.getGameID() == null) {
+                sendError(session, "Error: Invalid game ID");
+                return;
+            }
 
+            var authData = dataAccess.getAuth(command.getAuthToken());
+            if (authData == null) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+            String username = authData.username();
             // Validate auth token and get username
-            String username = dataAccess.getAuth(command.getAuthToken()).username();
+//            String username = dataAccess.getAuth(command.getAuthToken()).username();
 
             // Get game data
             GameData gameData = dataAccess.getGame(command.getGameID());

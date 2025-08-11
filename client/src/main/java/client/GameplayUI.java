@@ -263,7 +263,6 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             return;
         }
 
-        // Check if it's the player's turn
         if (currentGame.getTeamTurn() != playerColor) {
             System.out.println("It's not your turn.");
             return;
@@ -276,6 +275,17 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             ChessMove move = parseMove(moveInput);
             if (move == null) {
                 System.out.println("Invalid move format. Use format like 'e2 e4' or 'e7 e8 Q' for promotion.");
+                return;
+            }
+
+            ChessPiece piece = currentGame.getBoard().getPiece(move.getStartPosition());
+            if (piece == null) {
+                System.out.println("No piece at starting position.");
+                return;
+            }
+
+            if (piece.getTeamColor() != playerColor) {
+                System.out.println("You can only move your own pieces.");
                 return;
             }
 
