@@ -1,5 +1,6 @@
 import chess.*;
 import client.ServerFacade;
+import client.GameplayUI;
 import model.AuthData;
 import model.GameData;
 import ui.EscapeSequences;
@@ -258,6 +259,20 @@ public class Main {
             boolean whiteOnBottom = color.equals("WHITE");
             drawChessBoard(board, whiteOnBottom);
 
+            ChessGame.TeamColor playerColor = color.equals("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+            GameplayUI gameplayUI = new GameplayUI(
+                    scanner,
+                    "http://localhost:8080",
+                    currentAuth.getAuthToken(),
+                    currentAuth.getUsername(),
+                    selectedGame.getGameID(),
+                    playerColor,
+                    () -> {
+                        System.out.println("Returned to main menu.");
+                    }
+            );
+
+            gameplayUI.start();
         } catch (NumberFormatException e) {
             System.out.println("Invalid game number format. Please enter a number.");
         } catch (Exception e) {
@@ -288,6 +303,19 @@ public class Main {
             ChessBoard board = selectedGame.getGame().getBoard();
             drawChessBoard(board, true);
 
+            GameplayUI gameplayUI = new GameplayUI(
+                    scanner,
+                    "http://localhost:8080",
+                    currentAuth.getAuthToken(),
+                    currentAuth.getUsername(),
+                    selectedGame.getGameID(),
+                    null, // null means observer
+                    () -> {
+                        // Callback when gameplay exits - returns to main menu
+                        System.out.println("Returned to main menu.");
+                    }
+            );
+            gameplayUI.start();
         } catch (NumberFormatException e) {
             System.out.println("Invalid game number format. Please enter a number.");
         } catch (Exception e) {

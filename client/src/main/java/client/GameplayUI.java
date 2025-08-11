@@ -1,6 +1,7 @@
 package client;
 
 import chess.*;
+import com.google.gson.Gson;
 import client.websocket.WebSocketFacade;
 import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGameMessage;
@@ -12,6 +13,7 @@ import java.util.Scanner;
 import java.util.Collection;
 import java.util.Set;
 import java.util.HashSet;
+import ui.EscapeSequences;
 
 public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
@@ -150,45 +152,90 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
     }
 
     private void drawBoardFromWhitePerspective(ChessBoard board) {
-        System.out.println("   a  b  c  d  e  f  g  h");
-        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
-
-        for (int row = 8; row >= 1; row--) {
-            System.out.print(row + " │");
-            for (int col = 1; col <= 8; col++) {
-                ChessPiece piece = board.getPiece(new ChessPosition(row, col));
-                System.out.print(getPieceSymbol(piece) + " │");
-            }
-            System.out.println(" " + row);
-
-            if (row > 1) {
-                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
-            }
-        }
-
-        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
-        System.out.println("   a  b  c  d  e  f  g  h");
+        System.out.println();
+        printColumnLabels(false);
+        drawBoardRows(board, 8, 1, -1, 1, 8, 1);
+        printColumnLabels(false);
+        System.out.println();
     }
 
     private void drawBoardFromBlackPerspective(ChessBoard board) {
-        System.out.println("   h  g  f  e  d  c  b  a");
-        System.out.println("  ┌──┬──┬──┬──┬──┬──┬──┬──┐");
+        System.out.println();
+        printColumnLabels(true);
+        drawBoardRows(board, 1, 8, 1, 8, 1, -1);
+        printColumnLabels(true);
+        System.out.println();
+    }
 
-        for (int row = 1; row <= 8; row++) {
-            System.out.print(row + " │");
-            for (int col = 8; col >= 1; col--) {
-                ChessPiece piece = board.getPiece(new ChessPosition(row, col));
-                System.out.print(getPieceSymbol(piece) + " │");
+    private void printColumnLabels(boolean reverse) {
+        System.out.print("   ");
+        if (reverse) {
+            for (char col = 'h'; col >= 'a'; col--) {
+                System.out.print(" " + col + " ");
             }
-            System.out.println(" " + row);
-
-            if (row < 8) {
-                System.out.println("  ├──┼──┼──┼──┼──┼──┼──┼──┤");
+        } else {
+            for (char col = 'a'; col <= 'h'; col++) {
+                System.out.print(" " + col + " ");
             }
         }
+        System.out.println();
+    }
 
-        System.out.println("  └──┴──┴──┴──┴──┴──┴──┴──┘");
-        System.out.println("   h  g  f  e  d  c  b  a");
+    private void drawBoardRows(ChessBoard board, int startRow, int endRow, int rowIncrement,
+                               int startCol, int endCol, int colIncrement) {
+        for (int row = startRow; (rowIncrement > 0 ? row <= endRow : row >= endRow); row += rowIncrement) {
+            System.out.print(" " + row + " ");
+
+            for (int col = startCol; (colIncrement > 0 ? col <= endCol : col >= endCol); col += colIncrement) {
+                boolean isLightSquare = (row + col) % 2 == 1;
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(position);
+
+                drawSquare(piece, isLightSquare);
+            }
+
+            System.out.println(" " + row);
+        }
+    }
+
+    private void drawSquare(ChessPiece piece, boolean isLightSquare) {
+        String bgColor = isLightSquare ? ui.EscapeSequences.SET_BG_COLOR_WHITE : ui.EscapeSequences.SET_BG_COLOR_DARK_GREEN;
+        String textColor = ui.EscapeSequences.SET_TEXT_COLOR_BLACK;
+
+        System.out.print(bgColor + textColor);
+
+        if (piece == null) {
+            System.out.print(ui.EscapeSequences.EMPTY);
+        } else {
+            System.out.print(getMainPieceSymbol(piece));
+        }
+
+        System.out.print(ui.EscapeSequences.RESET_BG_COLOR + ui.EscapeSequences.RESET_TEXT_COLOR);
+    }
+
+    private String getMainPieceSymbol(ChessPiece piece) {
+        ChessPiece.PieceType type = piece.getPieceType();
+        ChessGame.TeamColor color = piece.getTeamColor();
+
+        if (color == ChessGame.TeamColor.WHITE) {
+            return switch (type) {
+                case KING -> ui.EscapeSequences.WHITE_KING;
+                case QUEEN -> ui.EscapeSequences.WHITE_QUEEN;
+                case BISHOP -> ui.EscapeSequences.WHITE_BISHOP;
+                case KNIGHT -> ui.EscapeSequences.WHITE_KNIGHT;
+                case ROOK -> ui.EscapeSequences.WHITE_ROOK;
+                case PAWN -> ui.EscapeSequences.WHITE_PAWN;
+            };
+        } else {
+            return switch (type) {
+                case KING -> ui.EscapeSequences.BLACK_KING;
+                case QUEEN -> ui.EscapeSequences.BLACK_QUEEN;
+                case BISHOP -> ui.EscapeSequences.BLACK_BISHOP;
+                case KNIGHT -> ui.EscapeSequences.BLACK_KNIGHT;
+                case ROOK -> ui.EscapeSequences.BLACK_ROOK;
+                case PAWN -> ui.EscapeSequences.BLACK_PAWN;
+            };
+        }
     }
 
     private String getPieceSymbol(ChessPiece piece) {
@@ -432,11 +479,11 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
                 if (highlights.contains(pos)) {
                     // Highlight this position
-                    System.out.print(EscapeSequences.SET_BG_COLOR_YELLOW +
-                            EscapeSequences.SET_TEXT_COLOR_BLACK +
+                    System.out.print(client.EscapeSequences.SET_BG_COLOR_YELLOW +
+                            client.EscapeSequences.SET_TEXT_COLOR_BLACK +
                             getPieceSymbol(piece) +
-                            EscapeSequences.RESET_BG_COLOR +
-                            EscapeSequences.RESET_TEXT_COLOR + " │");
+                            client.EscapeSequences.RESET_BG_COLOR +
+                            client.EscapeSequences.RESET_TEXT_COLOR + " │");
                 } else {
                     System.out.print(getPieceSymbol(piece) + " │");
                 }
@@ -464,11 +511,11 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
                 if (highlights.contains(pos)) {
                     // Highlight this position
-                    System.out.print(EscapeSequences.SET_BG_COLOR_YELLOW +
-                            EscapeSequences.SET_TEXT_COLOR_BLACK +
+                    System.out.print(client.EscapeSequences.SET_BG_COLOR_YELLOW +
+                            client.EscapeSequences.SET_TEXT_COLOR_BLACK +
                             getPieceSymbol(piece) +
-                            EscapeSequences.RESET_BG_COLOR +
-                            EscapeSequences.RESET_TEXT_COLOR + " │");
+                            client.EscapeSequences.RESET_BG_COLOR +
+                            client.EscapeSequences.RESET_TEXT_COLOR + " │");
                 } else {
                     System.out.print(getPieceSymbol(piece) + " │");
                 }
@@ -500,7 +547,18 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
         switch (message.getServerMessageType()) {
             case LOAD_GAME -> {
                 LoadGameMessage loadMessage = (LoadGameMessage) message;
-                currentGame = (ChessGame) loadMessage.getGame();
+
+                // Handle the JSON deserialization properly
+                Object gameObject = loadMessage.getGame();
+                if (gameObject instanceof ChessGame) {
+                    currentGame = (ChessGame) gameObject;
+                } else {
+                    // If it's a LinkedTreeMap, we need to deserialize it properly
+                    Gson gson = new Gson();
+                    String gameJson = gson.toJson(gameObject);
+                    currentGame = gson.fromJson(gameJson, ChessGame.class);
+                }
+
                 System.out.println("\n" + EscapeSequences.ERASE_LINE + "Game board updated:");
                 drawBoard(currentGame.getBoard());
 
