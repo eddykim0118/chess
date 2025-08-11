@@ -237,6 +237,11 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             return;
         }
 
+        if (isGameOver()) {
+            System.out.println("Game is already over - cannot resign.");
+            return;
+        }
+
         System.out.print("Are you sure you want to resign? (yes/no): ");
         String confirmation = scanner.nextLine().trim().toLowerCase();
 
@@ -260,6 +265,11 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
         if (currentGame == null) {
             System.out.println("No game loaded.");
+            return;
+        }
+
+        if (isGameOver()) {
+            System.out.println("Game is over - no more moves allowed.");
             return;
         }
 
@@ -474,6 +484,17 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
         System.out.println("   h  g  f  e  d  c  b  a");
     }
 
+    private boolean isGameOver() {
+        if (currentGame == null) {
+            return false;
+        }
+
+        return currentGame.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                currentGame.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                currentGame.isInStalemate(ChessGame.TeamColor.WHITE) ||
+                currentGame.isInStalemate(ChessGame.TeamColor.BLACK);
+    }
+
     @Override
     public void notify(ServerMessage message) {
         switch (message.getServerMessageType()) {
@@ -482,6 +503,14 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
                 currentGame = (ChessGame) loadMessage.getGame();
                 System.out.println("\n" + EscapeSequences.ERASE_LINE + "Game board updated:");
                 drawBoard(currentGame.getBoard());
+
+                // Check if game is over and inform user
+                if (isGameOver()) {
+                    System.out.println(EscapeSequences.SET_TEXT_COLOR_RED +
+                            "Game is over - no more moves allowed." +
+                            EscapeSequences.RESET_TEXT_COLOR);
+                }
+
                 System.out.print(">>> ");
             }
             case ERROR -> {

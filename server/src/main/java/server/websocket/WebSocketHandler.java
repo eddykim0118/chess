@@ -153,10 +153,7 @@ public class WebSocketHandler {
                 return;
             }
             String username = authData.username();
-            // Validate auth token and get username
-//            String username = dataAccess.getAuth(command.getAuthToken()).username();
 
-            // Get game data
             GameData gameData = dataAccess.getGame(command.getGameID());
             if (gameData == null) {
                 sendError(session, "Error: Game not found");
@@ -248,6 +245,11 @@ public class WebSocketHandler {
                 broadcastToAll(command.getGameID(), stalemateNotification);
             }
 
+            if (isGameOver(command.getGameID(), game)) {
+                sendError(session, "Error: Game is over");
+                return;
+            }
+
         } catch (DataAccessException e) {
             sendError(session, "Error: " + e.getMessage());
         }
@@ -294,17 +296,14 @@ public class WebSocketHandler {
 
     private void handleResign(Session session, UserGameCommand command) {
         try {
-            // Validate auth token and get username
             String username = dataAccess.getAuth(command.getAuthToken()).username();
 
-            // Get game data
             GameData gameData = dataAccess.getGame(command.getGameID());
             if (gameData == null) {
                 sendError(session, "Error: Game not found");
                 return;
             }
 
-            // Check if game is already resigned
             if (resignedGames.getOrDefault(command.getGameID(), false)) {
                 sendError(session, "Error: Game is already over");
                 return;
@@ -312,7 +311,6 @@ public class WebSocketHandler {
 
             ChessGame game = gameData.game();
 
-            // Check if game is already over due to checkmate/stalemate
             if (game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
                     game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
                     game.isInStalemate(ChessGame.TeamColor.WHITE) ||
@@ -321,7 +319,6 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Verify player authorization (only players can resign, not observers)
             boolean isWhitePlayer = username.equals(gameData.whiteUsername());
             boolean isBlackPlayer = username.equals(gameData.blackUsername());
 
@@ -330,17 +327,19 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Mark game as resigned
             resignedGames.put(command.getGameID(), true);
 
-            // Update game in database
             GameData updatedGameData = new GameData(gameData.gameID(), gameData.whiteUsername(),
                     gameData.blackUsername(), gameData.gameName(), game);
             dataAccess.updateGame(updatedGameData);
 
-            // Send resignation notification to ALL clients
             NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
             broadcastToAll(command.getGameID(), resignNotification);
+
+            if (isGameOver(command.getGameID(), game)) {
+                sendError(session, "Error: Game is already over");
+                return;
+            }
 
         } catch (DataAccessException e) {
             sendError(session, "Error: " + e.getMessage());
@@ -394,6 +393,19 @@ public class WebSocketHandler {
                 }
             }
         }
+    }
+
+    private boolean isGameOver(Integer gameID, ChessGame game) {
+        // Check if game was resigned
+        if (resignedGames.getOrDefault(gameID, false)) {
+            return true;
+        }
+
+        // Check for checkmate or stalemate
+        return game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                game.isInStalemate(ChessGame.TeamColor.WHITE) ||
+                game.isInStalemate(ChessGame.TeamColor.BLACK);
     }
 
     private record SessionInfo(String username, Integer gameID, String role) {}
