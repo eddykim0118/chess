@@ -249,27 +249,27 @@ public class WebSocketHandler {
     }
 
     private void handleLeave(Session session, UserGameCommand command) {
-        try {
-            ValidationResult validation = validateCommand(session, command);
-            if (validation.isFailed()) return;
+        ValidationResult validation = validateCommand(session, command);
+        if (validation.isFailed()) return;
 
-            String username = validation.username();
-            GameData gameData = validation.gameData();
+        String username = validation.username();
+        GameData gameData = validation.gameData();
 
-            boolean isPlayer = username.equals(gameData.getWhiteUsername()) ||
-                    username.equals(gameData.getBlackUsername());
+        boolean isPlayer = username.equals(gameData.getWhiteUsername()) ||
+                username.equals(gameData.getBlackUsername());
 
-            if (isPlayer) {
+        if (isPlayer) {
+            try {
                 updateGameDataOnPlayerLeave(username, gameData);
+            } catch (DataAccessException e) {
+                sendError(session, "Error: " + e.getMessage());
+                return;
             }
-
-            cleanupSession(session, command.getGameID());
-            NotificationMessage notification = new NotificationMessage(username + " left the game");
-            broadcastToOthers(command.getGameID(), session, notification);
-
-        } catch (DataAccessException e) {
-            sendError(session, "Error: " + e.getMessage());
         }
+
+        cleanupSession(session, command.getGameID());
+        NotificationMessage notification = new NotificationMessage(username + " left the game");
+        broadcastToOthers(command.getGameID(), session, notification);
     }
 
     private void updateGameDataOnPlayerLeave(String username, GameData gameData) throws DataAccessException {
@@ -291,31 +291,26 @@ public class WebSocketHandler {
     }
 
     private void handleResign(Session session, UserGameCommand command) {
-        try {
-            ValidationResult validation = validateCommand(session, command);
-            if (validation.isFailed()) return;
+        ValidationResult validation = validateCommand(session, command);
+        if (validation.isFailed()) return;
 
-            String username = validation.username();
-            GameData gameData = validation.gameData();
-            ChessGame game = gameData.getGame();
+        String username = validation.username();
+        GameData gameData = validation.gameData();
+        ChessGame game = gameData.getGame();
 
-            if (isGameOver(command.getGameID(), game)) {
-                sendError(session, "Error: Game is already over");
-                return;
-            }
-
-            if (!isPlayer(username, gameData)) {
-                sendError(session, "Error: Observer cannot resign");
-                return;
-            }
-
-            RESIGNED_GAMES.put(command.getGameID(), true);
-            NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
-            broadcastToAll(command.getGameID(), resignNotification);
-
-        } catch (DataAccessException e) {
-            sendError(session, "Error: " + e.getMessage());
+        if (isGameOver(command.getGameID(), game)) {
+            sendError(session, "Error: Game is already over");
+            return;
         }
+
+        if (!isPlayer(username, gameData)) {
+            sendError(session, "Error: Observer cannot resign");
+            return;
+        }
+
+        RESIGNED_GAMES.put(command.getGameID(), true);
+        NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
+        broadcastToAll(command.getGameID(), resignNotification);
     }
 
     private boolean isPlayer(String username, GameData gameData) {
