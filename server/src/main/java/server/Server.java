@@ -159,9 +159,13 @@ public class Server {
     private Object joinGameHandler(Request req, Response res) {
         try {
             String authToken = req.headers("authorization");
-            GameService.JoinGameRequest request = gson.fromJson(req.body(), GameService.JoinGameRequest.class);
             
             // Debug logging
+            System.out.println("Raw request body: " + req.body());
+            System.out.println("Auth token: " + authToken);
+            
+            GameService.JoinGameRequest request = gson.fromJson(req.body(), GameService.JoinGameRequest.class);
+            
             System.out.println("Join game request: " + gson.toJson(request));
             
             gameService.joinGame(request, authToken);
@@ -170,6 +174,10 @@ public class Server {
         } catch (DataAccessException e) {
             System.out.println("DataAccessException caught: " + e.getMessage());
             return handleError(res, e);
+        } catch (Exception e) {
+            System.out.println("Unexpected exception caught: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
+            return handleError(res, new DataAccessException("Error: " + e.getMessage()));
         }
     }
 

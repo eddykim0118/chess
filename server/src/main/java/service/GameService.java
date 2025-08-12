@@ -59,26 +59,35 @@ public class GameService {
         String username = auth.getUsername();
         GameData updatedGame;
 
-        // Validate playerColor - only accept "WHITE", "BLACK", or null for observers
-        if (request.playerColor() != null && !request.playerColor().equals("WHITE") && !request.playerColor().equals("BLACK")) {
+        // Debug logging
+        System.out.println("PlayerColor received: '" + request.playerColor() + "' (length: " + 
+                           (request.playerColor() == null ? "null" : request.playerColor().length()) + ")");
+
+        // Validate playerColor - must be exactly "WHITE" or "BLACK" 
+        // Null is NOT allowed (observers must be handled differently)
+        if (request.playerColor() == null) {
+            System.out.println("Throwing bad request exception for null playerColor");
+            throw new DataAccessException("Error: bad request");
+        }
+        
+        if (!"WHITE".equals(request.playerColor()) && !"BLACK".equals(request.playerColor())) {
+            System.out.println("Throwing bad request exception for invalid playerColor: '" + request.playerColor() + "'");
             throw new DataAccessException("Error: bad request");
         }
 
+        // Now we know playerColor is either "WHITE" or "BLACK"
         if ("WHITE".equals(request.playerColor())) {
             if (game.getWhiteUsername() != null) {
                 throw new DataAccessException("Error: already taken");
             }
             updatedGame = new GameData(game.getGameID(), username, game.getBlackUsername(), game.getGameName(), game.getGame());
             dataAccess.updateGame(updatedGame);
-        } else if ("BLACK".equals(request.playerColor())) {
+        } else { // Must be "BLACK"
             if (game.getBlackUsername() != null) {
                 throw new DataAccessException("Error: already taken");
             }
             updatedGame = new GameData(game.getGameID(), game.getWhiteUsername(), username, game.getGameName(), game.getGame());
             dataAccess.updateGame(updatedGame);
-        } else if (request.playerColor() == null) {
-            // Observer case - don't update the game, just allow the request to succeed
-            // No database update needed for observers
         }
     }
 
