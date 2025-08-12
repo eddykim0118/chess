@@ -30,16 +30,11 @@ public class WebSocketHandler {
     private final Gson gson = new Gson();
     private static DataAccess dataAccess;
 
-    // Track sessions by gameID
     private static final ConcurrentHashMap<Integer, CopyOnWriteArraySet<Session>> gameSessions = new ConcurrentHashMap<>();
-    // Track session to user info
     private static final ConcurrentHashMap<Session, SessionInfo> sessionInfo = new ConcurrentHashMap<>();
-    // Track resigned games
     private static final ConcurrentHashMap<Integer, Boolean> resignedGames = new ConcurrentHashMap<>();
-    // Track original messages by session
     private static final ConcurrentHashMap<Session, String> sessionMessages = new ConcurrentHashMap<>();
 
-    // Static method to set DataAccess (called from Server)
     public static void setDataAccess(DataAccess da) {
         dataAccess = da;
     }
@@ -52,7 +47,6 @@ public class WebSocketHandler {
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
         System.out.println("WebSocket connection closed");
-        // Clean up session tracking
         SessionInfo info = sessionInfo.remove(session);
         sessionMessages.remove(session);
         if (info != null) {
@@ -65,7 +59,6 @@ public class WebSocketHandler {
 
     @OnWebSocketMessage
     public void onMessage(Session session, String message) throws Exception {
-        // Store the original message for potential re-parsing
         sessionMessages.put(session, message);
 
         UserGameCommand command = gson.fromJson(message, UserGameCommand.class);
@@ -80,19 +73,16 @@ public class WebSocketHandler {
 
     private void handleConnect(Session session, UserGameCommand command) {
         try {
-            // Validate auth token exists
             if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
                 sendError(session, "Error: Invalid auth token");
                 return;
             }
 
-            // Validate gameID exists
             if (command.getGameID() == null) {
                 sendError(session, "Error: Invalid game ID");
                 return;
             }
 
-            // Validate auth token and get username
             var authData = dataAccess.getAuth(command.getAuthToken());
             if (authData == null) {
                 sendError(session, "Error: Invalid auth token");
@@ -100,17 +90,14 @@ public class WebSocketHandler {
             }
             String username = authData.getUsername();
 
-            // Validate game exists
             GameData gameData = dataAccess.getGame(command.getGameID());
             if (gameData == null) {
                 sendError(session, "Error: Game not found");
                 return;
             }
 
-            // Track this session
             gameSessions.computeIfAbsent(command.getGameID(), k -> new CopyOnWriteArraySet<>()).add(session);
 
-            // Determine player role
             String role;
             if (username.equals(gameData.getWhiteUsername())) {
                 role = username + " joined as white player";
@@ -122,11 +109,8 @@ public class WebSocketHandler {
 
             sessionInfo.put(session, new SessionInfo(username, command.getGameID(), role));
 
-            // Send LOAD_GAME to connecting client
             LoadGameMessage loadMessage = new LoadGameMessage(gameData.getGame());
             sendMessage(session, loadMessage);
-
-            // Send NOTIFICATION to other clients
             NotificationMessage notification = new NotificationMessage(role);
             broadcastToOthers(command.getGameID(), session, notification);
 
@@ -139,7 +123,6 @@ public class WebSocketHandler {
 
     private void handleMakeMove(Session session, UserGameCommand command) {
         try {
-            // Check if game is resigned
             if (resignedGames.getOrDefault(command.getGameID(), false)) {
                 sendError(session, "Error: Game is over due to resignation");
                 return;
@@ -169,16 +152,13 @@ public class WebSocketHandler {
 
             ChessGame game = gameData.getGame();
 
-            // Check if game is over
             if (isGameOver(command.getGameID(), game)) {
                 sendError(session, "Error: Game is over");
                 return;
             }
 
-            // Parse the move from the command
             ChessMove move = null;
             try {
-                // Parse the original message to get the move
                 String originalMessage = sessionMessages.get(session);
                 if (originalMessage != null) {
                     com.google.gson.JsonObject jsonObject = gson.fromJson(originalMessage, com.google.gson.JsonObject.class);
@@ -196,7 +176,6 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Verify player authorization
             ChessGame.TeamColor playerColor = null;
             if (username.equals(gameData.getWhiteUsername())) {
                 playerColor = ChessGame.TeamColor.WHITE;
@@ -207,13 +186,11 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Check if it's the player's turn
             if (game.getTeamTurn() != playerColor) {
                 sendError(session, "Error: Not your turn");
                 return;
             }
 
-            // Validate and make the move
             try {
                 game.makeMove(move);
             } catch (InvalidMoveException e) {
@@ -221,21 +198,17 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Update game in database
             GameData updatedGameData = new GameData(gameData.getGameID(), gameData.getWhiteUsername(),
                     gameData.getBlackUsername(), gameData.getGameName(), game);
             dataAccess.updateGame(updatedGameData);
 
-            // Send LOAD_GAME to all clients
             LoadGameMessage loadMessage = new LoadGameMessage(game);
             broadcastToAll(command.getGameID(), loadMessage);
 
-            // Send move notification to other clients
             String moveDescription = formatMove(move, playerColor);
             NotificationMessage moveNotification = new NotificationMessage(username + " made move: " + moveDescription);
             broadcastToOthers(command.getGameID(), session, moveNotification);
 
-            // Check for check/checkmate/stalemate and notify all clients
             ChessGame.TeamColor oppositeColor = (playerColor == ChessGame.TeamColor.WHITE) ?
                     ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
 
@@ -261,7 +234,6 @@ public class WebSocketHandler {
 
     private void handleLeave(Session session, UserGameCommand command) {
         try {
-            // Validate auth token and gameID
             if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
                 sendError(session, "Error: Invalid auth token");
                 return;
@@ -278,19 +250,16 @@ public class WebSocketHandler {
             }
             String username = authData.getUsername();
 
-            // Get game data
             GameData gameData = dataAccess.getGame(command.getGameID());
             if (gameData == null) {
                 sendError(session, "Error: Game not found");
                 return;
             }
 
-            // Determine if this is a player leaving (vs observer)
             boolean isPlayer = username.equals(gameData.getWhiteUsername()) ||
                     username.equals(gameData.getBlackUsername());
 
             if (isPlayer) {
-                // Remove player from game
                 String newWhiteUsername = username.equals(gameData.getWhiteUsername()) ? null : gameData.getWhiteUsername();
                 String newBlackUsername = username.equals(gameData.getBlackUsername()) ? null : gameData.getBlackUsername();
 
@@ -299,7 +268,6 @@ public class WebSocketHandler {
                 dataAccess.updateGame(updatedGameData);
             }
 
-            // Remove session from tracking
             CopyOnWriteArraySet<Session> sessions = gameSessions.get(command.getGameID());
             if (sessions != null) {
                 sessions.remove(session);
@@ -307,7 +275,6 @@ public class WebSocketHandler {
             sessionInfo.remove(session);
             sessionMessages.remove(session);
 
-            // Send notification to OTHER clients (not the leaving client)
             NotificationMessage notification = new NotificationMessage(username + " left the game");
             broadcastToOthers(command.getGameID(), session, notification);
 
@@ -318,7 +285,6 @@ public class WebSocketHandler {
 
     private void handleResign(Session session, UserGameCommand command) {
         try {
-            // Validate auth token and gameID
             if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
                 sendError(session, "Error: Invalid auth token");
                 return;
@@ -343,7 +309,6 @@ public class WebSocketHandler {
 
             ChessGame game = gameData.getGame();
 
-            // Check if game is already over
             if (isGameOver(command.getGameID(), game)) {
                 sendError(session, "Error: Game is already over");
                 return;
@@ -357,10 +322,8 @@ public class WebSocketHandler {
                 return;
             }
 
-            // Mark game as resigned
             resignedGames.put(command.getGameID(), true);
 
-            // Send resignation notification to ALL clients
             NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
             broadcastToAll(command.getGameID(), resignNotification);
 
@@ -370,12 +333,10 @@ public class WebSocketHandler {
     }
 
     private boolean isGameOver(Integer gameID, ChessGame game) {
-        // Check if game was resigned
         if (resignedGames.getOrDefault(gameID, false)) {
             return true;
         }
 
-        // Check for checkmate or stalemate
         return game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
                 game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
                 game.isInStalemate(ChessGame.TeamColor.WHITE) ||

@@ -44,7 +44,6 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
         this.callback = callback;
     }
 
-    // Keep the old constructor for backward compatibility
     public GameplayUI(Scanner scanner, String serverUrl, String authToken, String username,
                       Integer gameID, ChessGame.TeamColor playerColor) {
         this(scanner, serverUrl, authToken, username, gameID, playerColor, null);
@@ -52,15 +51,9 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
 
     public void start() {
         try {
-            // Connect to WebSocket
             webSocket = new WebSocketFacade(serverUrl, this);
-
-            // Send CONNECT command
             webSocket.connectToGame(authToken, gameID);
-
             System.out.println("Connected to game. Type 'help' for available commands.");
-
-            // Start command loop
             gameplayLoop();
 
         } catch (Exception e) {
@@ -117,11 +110,9 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             System.out.println("\nCurrent game state:");
             drawBoard(currentGame.getBoard());
 
-            // Show whose turn it is
             ChessGame.TeamColor currentTurn = currentGame.getTeamTurn();
             System.out.println("Current turn: " + currentTurn);
 
-            // Check for game status
             if (currentGame.isInCheck(ChessGame.TeamColor.WHITE)) {
                 System.out.println("White is in check!");
             }
@@ -143,10 +134,7 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
         System.out.println();
 
         if (playerColor == ChessGame.TeamColor.BLACK) {
-            // Draw board from black perspective (black pieces on bottom)
             drawBoardFromBlackPerspective(board);
-        } else {
-            // Draw board from white perspective or observer (white pieces on bottom)
             drawBoardFromWhitePerspective(board);
         }
     }
@@ -432,7 +420,6 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             return;
         }
 
-        // Get valid moves for this piece
         Collection<ChessMove> validMoves = currentGame.validMoves(position);
 
         if (validMoves.isEmpty()) {
@@ -441,9 +428,8 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             return;
         }
 
-        // Create set of positions to highlight
         Set<ChessPosition> highlightPositions = new HashSet<>();
-        highlightPositions.add(position); // Highlight the piece's current position
+        highlightPositions.add(position);
 
         // Add all end positions of valid moves
         for (ChessMove move : validMoves) {
@@ -510,7 +496,6 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
                 ChessPiece piece = board.getPiece(pos);
 
                 if (highlights.contains(pos)) {
-                    // Highlight this position
                     System.out.print(client.EscapeSequences.SET_BG_COLOR_YELLOW +
                             client.EscapeSequences.SET_TEXT_COLOR_BLACK +
                             getPieceSymbol(piece) +
@@ -548,12 +533,10 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
             case LOAD_GAME -> {
                 LoadGameMessage loadMessage = (LoadGameMessage) message;
 
-                // Handle the JSON deserialization properly
                 Object gameObject = loadMessage.getGame();
                 if (gameObject instanceof ChessGame) {
                     currentGame = (ChessGame) gameObject;
                 } else {
-                    // If it's a LinkedTreeMap, we need to deserialize it properly
                     Gson gson = new Gson();
                     String gameJson = gson.toJson(gameObject);
                     currentGame = gson.fromJson(gameJson, ChessGame.class);
@@ -562,7 +545,6 @@ public class GameplayUI implements WebSocketFacade.NotificationHandler {
                 System.out.println("\n" + EscapeSequences.ERASE_LINE + "Game board updated:");
                 drawBoard(currentGame.getBoard());
 
-                // Check if game is over and inform user
                 if (isGameOver()) {
                     System.out.println(EscapeSequences.SET_TEXT_COLOR_RED +
                             "Game is over - no more moves allowed." +
