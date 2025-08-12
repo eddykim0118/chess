@@ -30,10 +30,10 @@ public class WebSocketHandler {
     private final Gson gson = new Gson();
     private static DataAccess dataAccess;
 
-    private static final ConcurrentHashMap<Integer, CopyOnWriteArraySet<Session>> gameSessions = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Session, SessionInfo> sessionInfo = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Integer, Boolean> resignedGames = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Session, String> sessionMessages = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, CopyOnWriteArraySet<Session>> GAME_SESSIONS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, SessionInfo> SESSION_INFO = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Boolean> RESIGNED_GAMES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, String> SESSION_MESSAGES = new ConcurrentHashMap<>();
 
     public static void setDataAccess(DataAccess da) {
         dataAccess = da;
@@ -47,10 +47,10 @@ public class WebSocketHandler {
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
         System.out.println("WebSocket connection closed");
-        SessionInfo info = sessionInfo.remove(session);
-        sessionMessages.remove(session);
+        SessionInfo info = SESSION_INFO.remove(session);
+        SESSION_MESSAGES.remove(session);
         if (info != null) {
-            CopyOnWriteArraySet<Session> sessions = gameSessions.get(info.gameID());
+            CopyOnWriteArraySet<Session> sessions = GAME_SESSIONS.get(info.gameID());
             if (sessions != null) {
                 sessions.remove(session);
             }
@@ -59,7 +59,7 @@ public class WebSocketHandler {
 
     @OnWebSocketMessage
     public void onMessage(Session session, String message) throws Exception {
-        sessionMessages.put(session, message);
+        SESSION_MESSAGES.put(session, message);
 
         UserGameCommand command = gson.fromJson(message, UserGameCommand.class);
 
@@ -96,7 +96,7 @@ public class WebSocketHandler {
                 return;
             }
 
-            gameSessions.computeIfAbsent(command.getGameID(), k -> new CopyOnWriteArraySet<>()).add(session);
+            GAME_SESSIONS.computeIfAbsent(command.getGameID(), k -> new CopyOnWriteArraySet<>()).add(session);
 
             String role;
             if (username.equals(gameData.getWhiteUsername())) {
@@ -107,7 +107,7 @@ public class WebSocketHandler {
                 role = username + " joined as observer";
             }
 
-            sessionInfo.put(session, new SessionInfo(username, command.getGameID(), role));
+            SESSION_INFO.put(session, new SessionInfo(username, command.getGameID(), role));
 
             LoadGameMessage loadMessage = new LoadGameMessage(gameData.getGame());
             sendMessage(session, loadMessage);
@@ -123,7 +123,7 @@ public class WebSocketHandler {
 
     private void handleMakeMove(Session session, UserGameCommand command) {
         try {
-            if (resignedGames.getOrDefault(command.getGameID(), false)) {
+            if (RESIGNED_GAMES.getOrDefault(command.getGameID(), false)) {
                 sendError(session, "Error: Game is over due to resignation");
                 return;
             }
@@ -159,7 +159,7 @@ public class WebSocketHandler {
 
             ChessMove move = null;
             try {
-                String originalMessage = sessionMessages.get(session);
+                String originalMessage = SESSION_MESSAGES.get(session);
                 if (originalMessage != null) {
                     com.google.gson.JsonObject jsonObject = gson.fromJson(originalMessage, com.google.gson.JsonObject.class);
                     if (jsonObject.has("move")) {
@@ -268,12 +268,12 @@ public class WebSocketHandler {
                 dataAccess.updateGame(updatedGameData);
             }
 
-            CopyOnWriteArraySet<Session> sessions = gameSessions.get(command.getGameID());
+            CopyOnWriteArraySet<Session> sessions = GAME_SESSIONS.get(command.getGameID());
             if (sessions != null) {
                 sessions.remove(session);
             }
-            sessionInfo.remove(session);
-            sessionMessages.remove(session);
+            SESSION_INFO.remove(session);
+            SESSION_MESSAGES.remove(session);
 
             NotificationMessage notification = new NotificationMessage(username + " left the game");
             broadcastToOthers(command.getGameID(), session, notification);
@@ -322,7 +322,7 @@ public class WebSocketHandler {
                 return;
             }
 
-            resignedGames.put(command.getGameID(), true);
+            RESIGNED_GAMES.put(command.getGameID(), true);
 
             NotificationMessage resignNotification = new NotificationMessage(username + " resigned. Game is over.");
             broadcastToAll(command.getGameID(), resignNotification);
@@ -333,7 +333,7 @@ public class WebSocketHandler {
     }
 
     private boolean isGameOver(Integer gameID, ChessGame game) {
-        if (resignedGames.getOrDefault(gameID, false)) {
+        if (RESIGNED_GAMES.getOrDefault(gameID, false)) {
             return true;
         }
 
@@ -344,7 +344,7 @@ public class WebSocketHandler {
     }
 
     private void broadcastToAll(Integer gameID, Object message) {
-        CopyOnWriteArraySet<Session> sessions = gameSessions.get(gameID);
+        CopyOnWriteArraySet<Session> sessions = GAME_SESSIONS.get(gameID);
         if (sessions != null) {
             for (Session session : sessions) {
                 sendMessage(session, message);
@@ -382,7 +382,7 @@ public class WebSocketHandler {
     }
 
     private void broadcastToOthers(Integer gameID, Session excludeSession, Object message) {
-        CopyOnWriteArraySet<Session> sessions = gameSessions.get(gameID);
+        CopyOnWriteArraySet<Session> sessions = GAME_SESSIONS.get(gameID);
         if (sessions != null) {
             for (Session session : sessions) {
                 if (!session.equals(excludeSession)) {
