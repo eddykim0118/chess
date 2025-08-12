@@ -128,13 +128,27 @@ public class WebSocketHandler {
                 return;
             }
 
-            if (!validateCommand(session, command)) return;
+            if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+            if (command.getGameID() == null) {
+                sendError(session, "Error: Invalid game ID");
+                return;
+            }
 
-            String username = validateAndGetUsername(session, command);
-            if (username == null) return;
+            var authData = dataAccess.getAuth(command.getAuthToken());
+            if (authData == null) {
+                sendError(session, "Error: Invalid auth token");
+                return;
+            }
+            String username = authData.getUsername();
 
-            GameData gameData = validateAndGetGame(session, command);
-            if (gameData == null) return;
+            GameData gameData = dataAccess.getGame(command.getGameID());
+            if (gameData == null) {
+                sendError(session, "Error: Game not found");
+                return;
+            }
 
             ChessGame game = gameData.getGame();
 
@@ -143,13 +157,75 @@ public class WebSocketHandler {
                 return;
             }
 
-            ChessMove move = extractMoveFromMessage(session);
-            if (move == null) return;
+            ChessMove move = null;
+            try {
+                String originalMessage = SESSION_MESSAGES.get(session);
+                if (originalMessage != null) {
+                    com.google.gson.JsonObject jsonObject = gson.fromJson(originalMessage, com.google.gson.JsonObject.class);
+                    if (jsonObject.has("move")) {
+                        move = gson.fromJson(jsonObject.get("move"), ChessMove.class);
+                    }
+                }
 
-            ChessGame.TeamColor playerColor = validatePlayerTurn(session, username, gameData, game);
-            if (playerColor == null) return;
+                if (move == null) {
+                    sendError(session, "Error: Invalid move command");
+                    return;
+                }
+            } catch (Exception e) {
+                sendError(session, "Error: Invalid move format");
+                return;
+            }
 
-            executeMoveAndUpdate(session, command, game, gameData, move, username, playerColor);
+            ChessGame.TeamColor playerColor = null;
+            if (username.equals(gameData.getWhiteUsername())) {
+                playerColor = ChessGame.TeamColor.WHITE;
+            } else if (username.equals(gameData.getBlackUsername())) {
+                playerColor = ChessGame.TeamColor.BLACK;
+            } else {
+                sendError(session, "Error: Observer cannot make moves");
+                return;
+            }
+
+            if (game.getTeamTurn() != playerColor) {
+                sendError(session, "Error: Not your turn");
+                return;
+            }
+
+            try {
+                game.makeMove(move);
+            } catch (InvalidMoveException e) {
+                sendError(session, "Error: Invalid move - " + e.getMessage());
+                return;
+            }
+
+            GameData updatedGameData = new GameData(gameData.getGameID(), gameData.getWhiteUsername(),
+                    gameData.getBlackUsername(), gameData.getGameName(), game);
+            dataAccess.updateGame(updatedGameData);
+
+            LoadGameMessage loadMessage = new LoadGameMessage(game);
+            broadcastToAll(command.getGameID(), loadMessage);
+
+            String moveDescription = formatMove(move, playerColor);
+            NotificationMessage moveNotification = new NotificationMessage(username + " made move: " + moveDescription);
+            broadcastToOthers(command.getGameID(), session, moveNotification);
+
+            ChessGame.TeamColor oppositeColor = (playerColor == ChessGame.TeamColor.WHITE) ?
+                    ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(oppositeColor)) {
+                String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
+                        gameData.getWhiteUsername() : gameData.getBlackUsername();
+                NotificationMessage checkmateNotification = new NotificationMessage(opponentUsername + " is in checkmate");
+                broadcastToAll(command.getGameID(), checkmateNotification);
+            } else if (game.isInCheck(oppositeColor)) {
+                String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
+                        gameData.getWhiteUsername() : gameData.getBlackUsername();
+                NotificationMessage checkNotification = new NotificationMessage(opponentUsername + " is in check");
+                broadcastToAll(command.getGameID(), checkNotification);
+            } else if (game.isInStalemate(oppositeColor)) {
+                NotificationMessage stalemateNotification = new NotificationMessage("Game ended in stalemate");
+                broadcastToAll(command.getGameID(), stalemateNotification);
+            }
 
         } catch (DataAccessException e) {
             sendError(session, "Error: " + e.getMessage());
@@ -313,115 +389,6 @@ public class WebSocketHandler {
                     sendMessage(session, message);
                 }
             }
-        }
-    }
-
-    private boolean validateCommand(Session session, UserGameCommand command) {
-        if (command.getAuthToken() == null || command.getAuthToken().trim().isEmpty()) {
-            sendError(session, "Error: Invalid auth token");
-            return false;
-        }
-        if (command.getGameID() == null) {
-            sendError(session, "Error: Invalid game ID");
-            return false;
-        }
-        return true;
-    }
-
-    private String validateAndGetUsername(Session session, UserGameCommand command) throws DataAccessException {
-        var authData = dataAccess.getAuth(command.getAuthToken());
-        if (authData == null) {
-            sendError(session, "Error: Invalid auth token");
-            return null;
-        }
-        return authData.getUsername();
-    }
-
-    private GameData validateAndGetGame(Session session, UserGameCommand command) throws DataAccessException {
-        GameData gameData = dataAccess.getGame(command.getGameID());
-        if (gameData == null) {
-            sendError(session, "Error: Game not found");
-            return null;
-        }
-        return gameData;
-    }
-
-    private ChessMove extractMoveFromMessage(Session session) {
-        try {
-            String originalMessage = SESSION_MESSAGES.get(session);
-            if (originalMessage != null) {
-                com.google.gson.JsonObject jsonObject = gson.fromJson(originalMessage, com.google.gson.JsonObject.class);
-                if (jsonObject.has("move")) {
-                    return gson.fromJson(jsonObject.get("move"), ChessMove.class);
-                }
-            }
-            sendError(session, "Error: Invalid move command");
-            return null;
-        } catch (Exception e) {
-            sendError(session, "Error: Invalid move format");
-            return null;
-        }
-    }
-
-    private ChessGame.TeamColor validatePlayerTurn(Session session, String username, GameData gameData, ChessGame game) {
-        ChessGame.TeamColor playerColor = null;
-        if (username.equals(gameData.getWhiteUsername())) {
-            playerColor = ChessGame.TeamColor.WHITE;
-        } else if (username.equals(gameData.getBlackUsername())) {
-            playerColor = ChessGame.TeamColor.BLACK;
-        } else {
-            sendError(session, "Error: Observer cannot make moves");
-            return null;
-        }
-
-        if (game.getTeamTurn() != playerColor) {
-            sendError(session, "Error: Not your turn");
-            return null;
-        }
-        return playerColor;
-    }
-
-    private void executeMoveAndUpdate(Session session, UserGameCommand command, ChessGame game,
-                                      GameData gameData, ChessMove move, String username,
-                                      ChessGame.TeamColor playerColor) throws DataAccessException {
-        try {
-            game.makeMove(move);
-        } catch (InvalidMoveException e) {
-            sendError(session, "Error: Invalid move - " + e.getMessage());
-            return;
-        }
-
-        GameData updatedGameData = new GameData(gameData.getGameID(), gameData.getWhiteUsername(),
-                gameData.getBlackUsername(), gameData.getGameName(), game);
-        dataAccess.updateGame(updatedGameData);
-
-        LoadGameMessage loadMessage = new LoadGameMessage(game);
-        broadcastToAll(command.getGameID(), loadMessage);
-
-        String moveDescription = formatMove(move, playerColor);
-        NotificationMessage moveNotification = new NotificationMessage(username + " made move: " + moveDescription);
-        broadcastToOthers(command.getGameID(), session, moveNotification);
-
-        checkGameEndConditions(command, game, gameData, playerColor);
-    }
-
-    private void checkGameEndConditions(UserGameCommand command, ChessGame game, GameData gameData, ChessGame.TeamColor playerColor) {
-        ChessGame.TeamColor oppositeColor = (playerColor == ChessGame.TeamColor.WHITE) ?
-                ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
-
-        if (game.isInCheckmate(oppositeColor)) {
-            String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
-                    gameData.getWhiteUsername() : gameData.getBlackUsername();
-            NotificationMessage checkmateNotification = new NotificationMessage(opponentUsername + " is in checkmate");
-            broadcastToAll(command.getGameID(), checkmateNotification);
-        } else if (game.isInCheck(oppositeColor)) {
-            String opponentUsername = (oppositeColor == ChessGame.TeamColor.WHITE) ?
-                    gameData.getWhiteUsername() : gameData.getBlackUsername();
-            NotificationMessage checkNotification = new NotificationMessage(opponentUsername + " is in check");
-            broadcastToAll(command.getGameID(), checkNotification);
-        } else if (game.isInStalemate(oppositeColor)) {
-            NotificationMessage stalemateNotification = new NotificationMessage("Game ended in stalemate");
-            broadcastToAll(command.getGameID(), stalemateNotification);
         }
     }
 
