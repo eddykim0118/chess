@@ -59,6 +59,11 @@ public class GameService {
         String username = auth.getUsername();
         GameData updatedGame;
 
+        // Validate playerColor - only accept "WHITE", "BLACK", or null for observers
+        if (request.playerColor() != null && !request.playerColor().equals("WHITE") && !request.playerColor().equals("BLACK")) {
+            throw new DataAccessException("Error: bad request");
+        }
+
         if ("WHITE".equals(request.playerColor())) {
             if (game.getWhiteUsername() != null) {
                 throw new DataAccessException("Error: already taken");
@@ -71,13 +76,9 @@ public class GameService {
             }
             updatedGame = new GameData(game.getGameID(), game.getWhiteUsername(), username, game.getGameName(), game.getGame());
             dataAccess.updateGame(updatedGame);
-        } else if (request.playerColor() == null || request.playerColor().isEmpty()) {
+        } else if (request.playerColor() == null) {
             // Observer case - don't update the game, just allow the request to succeed
             // No database update needed for observers
-        } else {
-            // FIXED: This catches invalid colors like "PURPLE", "invalid", etc.
-            // Only accept "WHITE", "BLACK", null, or empty string
-            throw new DataAccessException("Error: bad request");
         }
     }
 
